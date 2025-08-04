@@ -13,11 +13,11 @@ pygame.mixer.init()
 # ゲーム定数
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-BOARD_SIZE = 10
-CELL_SIZE = 40
-BOARD_OFFSET_X = 200
+BOARD_SIZE = 8
+CELL_SIZE = 50
+BOARD_OFFSET_X = 250
 BOARD_OFFSET_Y = 50
-BLOCK_PREVIEW_SIZE = 30
+BLOCK_PREVIEW_SIZE = 35
 BLOCK_PREVIEW_OFFSET_Y = 450
 
 # 色の定義
@@ -35,6 +35,58 @@ CYAN = (0, 255, 255)
 
 # ブロックの色リスト
 BLOCK_COLORS = [RED, GREEN, BLUE, YELLOW, PURPLE, ORANGE, CYAN]
+
+class SparkleEffect:
+    """キラキラエフェクトクラス"""
+    
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.particles = []
+        self.lifetime = 60  # フレーム数
+        self.current_frame = 0
+        
+        # パーティクルを生成
+        for _ in range(8):
+            angle = random.uniform(0, 2 * math.pi)
+            speed = random.uniform(2, 6)
+            self.particles.append({
+                'dx': math.cos(angle) * speed,
+                'dy': math.sin(angle) * speed,
+                'x': x,
+                'y': y,
+                'color': random.choice([(255, 255, 0), (255, 255, 255), (255, 215, 0), (255, 255, 224)]),
+                'size': random.randint(2, 4)
+            })
+    
+    def update(self):
+        """エフェクトを更新"""
+        self.current_frame += 1
+        
+        for particle in self.particles:
+            particle['x'] += particle['dx']
+            particle['y'] += particle['dy']
+            particle['dy'] += 0.1  # 重力効果
+        
+        return self.current_frame < self.lifetime
+    
+    def draw(self, screen):
+        """エフェクトを描画"""
+        alpha = max(0, 255 - (self.current_frame * 255 // self.lifetime))
+        
+        for particle in self.particles:
+            # パーティクルの透明度を調整
+            particle_alpha = max(0, alpha - random.randint(0, 50))
+            if particle_alpha > 0:
+                # キラキラ効果を描画
+                pygame.draw.circle(screen, particle['color'], 
+                                 (int(particle['x']), int(particle['y'])), particle['size'])
+                
+                # 十字のキラキラ効果
+                size = particle['size']
+                x, y = int(particle['x']), int(particle['y'])
+                pygame.draw.line(screen, particle['color'], (x-size, y), (x+size, y), 1)
+                pygame.draw.line(screen, particle['color'], (x, y-size), (x, y+size), 1)
 
 class AssetGenerator:
     """ゲーム素材（画像・音声）を生成するクラス"""
@@ -80,14 +132,17 @@ class AssetGenerator:
         img = Image.new('RGBA', (board_width, board_height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(img)
         
-        # 背景色
-        draw.rectangle([0, 0, board_width-1, board_height-1], fill=LIGHT_GRAY)
+        # レトロゲーム風の背景色（マリオ風）
+        draw.rectangle([0, 0, board_width-1, board_height-1], fill=(135, 206, 235))  # 空色
         
-        # グリッド線
+        # グリッド線（より太く、レトロ風）
         for i in range(BOARD_SIZE + 1):
             x = i * CELL_SIZE
-            draw.line([(x, 0), (x, board_height)], fill=GRAY, width=1)
-            draw.line([(0, x), (board_width, x)], fill=GRAY, width=1)
+            draw.line([(x, 0), (x, board_height)], fill=(100, 100, 100), width=3)
+            draw.line([(0, x), (board_width, x)], fill=(100, 100, 100), width=3)
+        
+        # 盤面の外枠を強調
+        draw.rectangle([0, 0, board_width-1, board_height-1], outline=(50, 50, 50), width=5)
         
         return img
     
@@ -184,14 +239,6 @@ class Block:
         self.color = color
         self.width = len(shape[0])
         self.height = len(shape)
-    
-    def rotate(self):
-        """ブロックを90度回転"""
-        # 転置して各行を逆順にする
-        rotated = list(zip(*self.shape[::-1]))
-        self.shape = [list(row) for row in rotated]
-        self.width = len(self.shape[0])
-        self.height = len(self.shape)
     
     def draw(self, screen, x, y, cell_size, assets):
         """ブロックを描画"""
@@ -329,6 +376,11 @@ class Board:
         # 背景を描画
         screen.blit(assets["board_background"], (BOARD_OFFSET_X, BOARD_OFFSET_Y))
         
+        # 盤面の外枠を追加で描画（より目立つように）
+        pygame.draw.rect(screen, (50, 50, 50), 
+                        (BOARD_OFFSET_X - 3, BOARD_OFFSET_Y - 3, 
+                         BOARD_SIZE * CELL_SIZE + 6, BOARD_SIZE * CELL_SIZE + 6), 6)
+        
         # 配置済みブロックを描画
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
@@ -345,6 +397,7 @@ class Score:
     
     def __init__(self):
         self.score = 0
+        self.high_score = self.load_high_score()
         self.font = self.get_japanese_font(36)
         self.small_font = self.get_japanese_font(24)
     
@@ -369,9 +422,33 @@ class Score:
         # デフォルトフォントを使用
         return pygame.font.Font(None, size)
     
+    def load_high_score(self):
+        """ハイスコアを読み込み"""
+        try:
+            with open("high_score.txt", "r") as f:
+                return int(f.read().strip())
+        except:
+            return 0
+    
+    def save_high_score(self):
+        """ハイスコアを保存"""
+        try:
+            with open("high_score.txt", "w") as f:
+                f.write(str(self.high_score))
+        except:
+            pass
+    
     def add_score(self, points):
         """スコアを加算"""
         self.score += points
+        # ハイスコア更新チェック
+        if self.score > self.high_score:
+            self.high_score = self.score
+            self.save_high_score()
+    
+    def reset_score(self):
+        """スコアをリセット"""
+        self.score = 0
     
     def draw(self, screen, assets):
         """スコアを描画"""
@@ -381,6 +458,10 @@ class Score:
         # スコアテキスト
         score_text = self.font.render(f"スコア: {self.score}", True, WHITE)
         screen.blit(score_text, (30, 40))
+        
+        # ハイスコアテキスト
+        high_score_text = self.small_font.render(f"ハイスコア: {self.high_score}", True, WHITE)
+        screen.blit(high_score_text, (30, 70))
 
 class Game:
     """メインゲームクラス"""
@@ -406,8 +487,11 @@ class Game:
         self.drag_pos = (0, 0)
         self.game_over = False
         
+        # エフェクト管理
+        self.sparkle_effects = []
+        
         # BGM再生
-        pygame.mixer.music.load("assets/sounds/8-bit ブロックブラスト用.mp3")
+        pygame.mixer.music.load("assets/sounds/ブロックブラスト用.wav")
         pygame.mixer.music.play(-1)
     
     def get_japanese_font(self, size):
@@ -456,8 +540,7 @@ class Game:
                     self.drag_pos = event.pos
             
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r and self.selected_block:
-                    self.selected_block.rotate()
+                pass  # 回転機能を無効化
         
         return True
     
@@ -496,6 +579,9 @@ class Game:
                 if lines_cleared > 0:
                     self.assets["clear_sound"].play()
                     self.score.add_score(lines_cleared * 100)
+                    
+                    # キラキラエフェクトを追加
+                    self.add_sparkle_effects()
                 
                 # 使用したブロックを削除し、新しいブロックを追加
                 if self.selected_block in self.next_blocks:
@@ -515,16 +601,24 @@ class Game:
     def restart_game(self):
         """ゲームをリスタート"""
         self.board = Board()
+        self.score.reset_score()  # スコアをリセット
         self.next_blocks = self.block_generator.generate_next_blocks()
         self.selected_block = None
         self.dragging = False
         self.game_over = False
+        self.sparkle_effects = []  # エフェクトをクリア
         pygame.mixer.music.play(-1)
     
     def draw(self):
         """画面描画"""
-        # 背景
-        self.screen.fill((30, 30, 30))
+        # レトロゲーム風の背景（マリオ風）
+        self.screen.fill((135, 206, 235))  # 空色の背景
+        
+        # マリオ風の雲を描画
+        self.draw_clouds()
+        
+        # マリオ風の地面を描画
+        self.draw_ground()
         
         # 盤面を描画
         self.board.draw(self.screen, self.assets)
@@ -555,7 +649,7 @@ class Game:
                 pygame.draw.rect(self.screen, (0, 255, 0), 
                                (preview_x, preview_y, 
                                 self.selected_block.width * CELL_SIZE, 
-                                self.selected_block.height * CELL_SIZE), 2)
+                                self.selected_block.height * CELL_SIZE), 3)
             else:
                 # 配置不可能な場合は赤色の枠を表示
                 preview_x = BOARD_OFFSET_X + board_x * CELL_SIZE
@@ -563,7 +657,10 @@ class Game:
                 pygame.draw.rect(self.screen, (255, 0, 0), 
                                (preview_x, preview_y, 
                                 self.selected_block.width * CELL_SIZE, 
-                                self.selected_block.height * CELL_SIZE), 2)
+                                self.selected_block.height * CELL_SIZE), 3)
+        
+        # エフェクトを更新・描画
+        self.update_sparkle_effects()
         
         # ゲームオーバー表示
         if self.game_over:
@@ -576,10 +673,10 @@ class Game:
     
     def draw_next_blocks(self):
         """次のブロックを描画"""
-        font = self.get_japanese_font(24)
+        font = self.get_japanese_font(20)  # フォントサイズを小さく
         
         title = font.render("次のブロック:", True, WHITE)
-        self.screen.blit(title, (20, BLOCK_PREVIEW_OFFSET_Y - 30))
+        self.screen.blit(title, (20, BLOCK_PREVIEW_OFFSET_Y - 25))
         
         for i, block in enumerate(self.next_blocks):
             block_x = 20 + i * 120
@@ -630,22 +727,77 @@ class Game:
         restart_text = restart_font.render("Rキーでリスタート", True, WHITE)
         restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 60))
         self.screen.blit(restart_text, restart_rect)
+        
+        # ハイスコア表示
+        high_score_text = score_font.render(f"ハイスコア: {self.score.high_score}", True, (255, 255, 0))
+        high_score_rect = high_score_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 100))
+        self.screen.blit(high_score_text, high_score_rect)
+    
+    def add_sparkle_effects(self):
+        """キラキラエフェクトを追加"""
+        # 消去されたブロックの位置にエフェクトを追加
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                if self.board.grid[row][col] is None:  # 空のマス
+                    x = BOARD_OFFSET_X + col * CELL_SIZE + CELL_SIZE // 2
+                    y = BOARD_OFFSET_Y + row * CELL_SIZE + CELL_SIZE // 2
+                    self.sparkle_effects.append(SparkleEffect(x, y))
+    
+    def update_sparkle_effects(self):
+        """キラキラエフェクトを更新・描画"""
+        # エフェクトを更新
+        self.sparkle_effects = [effect for effect in self.sparkle_effects if effect.update()]
+        
+        # エフェクトを描画
+        for effect in self.sparkle_effects:
+            effect.draw(self.screen)
+    
+    def draw_clouds(self):
+        """マリオ風の雲を描画"""
+        cloud_color = (255, 255, 255)
+        
+        # 雲1
+        pygame.draw.ellipse(self.screen, cloud_color, (50, 80, 60, 30))
+        pygame.draw.ellipse(self.screen, cloud_color, (80, 80, 50, 25))
+        pygame.draw.ellipse(self.screen, cloud_color, (110, 80, 40, 20))
+        
+        # 雲2
+        pygame.draw.ellipse(self.screen, cloud_color, (600, 120, 70, 35))
+        pygame.draw.ellipse(self.screen, cloud_color, (640, 120, 55, 30))
+        pygame.draw.ellipse(self.screen, cloud_color, (670, 120, 45, 25))
+        
+        # 雲3
+        pygame.draw.ellipse(self.screen, cloud_color, (300, 60, 50, 25))
+        pygame.draw.ellipse(self.screen, cloud_color, (330, 60, 40, 20))
+    
+    def draw_ground(self):
+        """マリオ風の地面を描画"""
+        # 地面の色（緑）
+        ground_color = (34, 139, 34)
+        
+        # 地面を描画
+        pygame.draw.rect(self.screen, ground_color, (0, SCREEN_HEIGHT - 100, SCREEN_WIDTH, 100))
+        
+        # 地面の装飾（草）
+        grass_color = (50, 205, 50)
+        for i in range(0, SCREEN_WIDTH, 30):
+            pygame.draw.rect(self.screen, grass_color, (i, SCREEN_HEIGHT - 100, 20, 10))
     
     def draw_instructions(self):
         """操作説明を描画"""
-        font = self.get_japanese_font(20)
+        font = self.get_japanese_font(14)  # フォントサイズをさらに小さく
         
         instructions = [
             "操作方法:",
-            "・マウスでブロックをドラッグして配置",
-            "・Rキーでブロックを回転",
+            "・マウスでブロックをドラッグ",
             "・縦横のラインが完成すると消去",
-            "・ブロックが置けなくなったらゲームオーバー"
+            "・ブロックが置けなくなったら",
+            "  ゲームオーバー"
         ]
         
         for i, instruction in enumerate(instructions):
             text = font.render(instruction, True, WHITE)
-            self.screen.blit(text, (20, 150 + i * 20))
+            self.screen.blit(text, (20, 120 + i * 16))  # 位置と行間を調整
     
     def run(self):
         """メインゲームループ"""

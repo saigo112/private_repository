@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テトリスWebゲーム</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>テトリス</h1>
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="label">スコア:</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">レベル:</span>
+                    <span id="level">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">ライン:</span>
+                    <span id="lines">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">爆弾:</span>
+                    <span id="bombs">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-main">
+            <div class="game-board-container">
+                <canvas id="gameBoard" width="300" height="600"></canvas>
+                <div id="gameOver" class="game-over hidden">
+                    <h2>ゲームオーバー</h2>
+                    <button id="restartBtn" class="btn">リスタート</button>
+                </div>
+            </div>
+
+            <div class="game-sidebar">
+                <div class="next-piece-container">
+                    <h3>次のピース</h3>
+                    <canvas id="nextPiece" width="120" height="80"></canvas>
+                </div>
+                
+                <div class="controls-info">
+                    <h3>操作方法</h3>
+                    <p>←→: 移動</p>
+                    <p>↑: 回転</p>
+                    <p>↓: 落下</p>
+                    <p>Space: ハードドロップ</p>
+                    <p>B: 爆弾配置</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <div class="control-row">
+                <button id="rotateBtn" class="control-btn rotate-btn">回転</button>
+            </div>
+            <div class="control-row">
+                <button id="leftBtn" class="control-btn">←</button>
+                <button id="downBtn" class="control-btn">↓</button>
+                <button id="rightBtn" class="control-btn">→</button>
+            </div>
+            <div class="control-row">
+                <button id="hardDropBtn" class="control-btn">ハードドロップ</button>
+            </div>
+            <div class="control-row">
+                <button id="bombBtn" class="control-btn bomb-btn">爆弾配置</button>
+            </div>
+        </div>
+
+        <div class="connection-status">
+            <span id="connectionStatus">接続中...</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
