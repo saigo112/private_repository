@@ -42,6 +42,10 @@ class ActionType(Enum):
     ROTATE = "rotate"
     HARD_DROP = "hard_drop"
     PLACE_BOMB = "place_bomb"
+    SPAWN_BOMB = "spawn_bomb"
+    PAUSE = "pause"
+    SPEED_UP = "speed_up"
+    SPEED_DOWN = "speed_down"
 
 @dataclass
 class Bomb:
@@ -79,11 +83,19 @@ class Tetromino:
 
     @property
     def shape(self) -> List[List[int]]:
+        if self.shape_idx == -1:  # 爆弾ピース
+            return [[1]]  # 1x1の爆弾
         return TETROMINOS[self.shape_idx]
 
     @property
     def color(self) -> Tuple[int, int, int]:
+        if self.shape_idx == -1:  # 爆弾ピース
+            return BOMB_RED
         return TETROMINO_COLORS[self.shape_idx]
+    
+    @property
+    def is_bomb(self) -> bool:
+        return self.shape_idx == -1
 
     def rotate(self, shape: List[List[int]]) -> List[List[int]]:
         """90度回転"""
@@ -119,6 +131,8 @@ class TetrisGame:
         self.fall_speed = 375  # ミリ秒
         self.base_fall_speed = 375
         self.speed_multiplier = 1.0
+        self.paused = False
+        self.lines_cleared_this_frame = 0  # ライン消去エフェクト用
         
         self.spawn_new_piece()
 
@@ -160,24 +174,51 @@ class TetrisGame:
         """現在のピースをボードに配置"""
         if not self.current_piece:
             return
-            
-        shape = self.current_piece.get_rotated_shape()
-        for r, row in enumerate(shape):
-            for c, cell in enumerate(row):
-                if cell:
-                    board_y = self.current_piece.y + r
-                    board_x = self.current_piece.x + c
-                    if board_y >= 0:
-                        self.board[board_y][board_x] = self.current_piece.color
         
-        self.clear_lines()
+        # 爆弾ピースの場合、配置と同時に爆発
+        if self.current_piece.is_bomb:
+            shape = self.current_piece.get_rotated_shape()
+            for r, row in enumerate(shape):
+                for c, cell in enumerate(row):
+                    if cell:
+                        board_y = self.current_piece.y + r
+                        board_x = self.current_piece.x + c
+                        if board_y >= 0:
+                            # 爆弾を配置して即座に爆発
+                            bomb = Bomb(board_x, board_y)
+                            bomb.explode(self.board)
+        else:
+            # 通常のピース
+            shape = self.current_piece.get_rotated_shape()
+            for r, row in enumerate(shape):
+                for c, cell in enumerate(row):
+                    if cell:
+                        board_y = self.current_piece.y + r
+                        board_x = self.current_piece.x + c
+                        if board_y >= 0:
+                            self.board[board_y][board_x] = self.current_piece.color
+        
+        lines_cleared = self.clear_lines()
         self.spawn_new_piece()
+        
+        # ライン消去エフェクト用のフラグ
+        if lines_cleared > 0:
+            self.lines_cleared_this_frame = lines_cleared
 
     def place_bomb(self, x: int, y: int) -> bool:
         """指定位置に爆弾を配置"""
         if self.bombs_available > 0 and 0 <= x < BOARD_WIDTH and 0 <= y < BOARD_HEIGHT:
             bomb = Bomb(x, y)
             self.bombs.append(bomb)
+            self.bombs_available -= 1
+            return True
+        return False
+    
+    def spawn_bomb_piece(self) -> bool:
+        """爆弾ピースを生成（次のピースを爆弾に変更）"""
+        if self.bombs_available > 0:
+            # 次のピースを爆弾ピースに変更
+            self.next_piece = Tetromino(BOARD_WIDTH // 2 - 1, 0, -1)  # -1は爆弾ピースを示す
             self.bombs_available -= 1
             return True
         return False
@@ -219,6 +260,10 @@ class TetrisGame:
             self.score += len(lines_to_clear) * 100 * self.level
             self.level = self.lines_cleared // 10 + 1
             self.base_fall_speed = max(50, 375 - (self.level - 1) * 37)
+            
+            # 消去されたライン数を返す
+            return len(lines_to_clear)
+        return 0
 
     def move_piece(self, dx: int, dy: int) -> bool:
         """ピースを移動"""
@@ -291,6 +336,9 @@ class TetrisGame:
             self.fall_speed = int(self.base_fall_speed * stack_speed_multiplier / self.speed_multiplier)
         else:
             self.fall_speed = int(self.base_fall_speed / self.speed_multiplier)
+        
+        # 速度が極端に遅くならないように制限
+        self.fall_speed = max(50, self.fall_speed)
 
     def change_speed(self, direction: str):
         """速度を変更"""
@@ -304,7 +352,7 @@ class TetrisGame:
 
     def update(self, current_time: int):
         """ゲーム状態を更新"""
-        if self.game_over:
+        if self.game_over or self.paused:
             return
 
         # 自動落下
@@ -318,6 +366,9 @@ class TetrisGame:
         
         # 爆弾爆発の処理
         self.explode_bombs()
+        
+        # ライン消去エフェクトフラグをリセット
+        self.lines_cleared_this_frame = 0
 
     def perform_action(self, action: ActionType, **kwargs) -> bool:
         """アクションを実行"""
@@ -339,6 +390,17 @@ class TetrisGame:
             x = kwargs.get('x', 0)
             y = kwargs.get('y', 0)
             return self.place_bomb(x, y)
+        elif action == ActionType.SPAWN_BOMB:
+            return self.spawn_bomb_piece()
+        elif action == ActionType.PAUSE:
+            self.paused = not self.paused
+            return True
+        elif action == ActionType.SPEED_UP:
+            self.change_speed("up")
+            return True
+        elif action == ActionType.SPEED_DOWN:
+            self.change_speed("down")
+            return True
         
         return False
 
@@ -357,6 +419,8 @@ class TetrisGame:
         self.fall_speed = 375
         self.base_fall_speed = 375
         self.speed_multiplier = 1.0
+        self.paused = False
+        self.lines_cleared_this_frame = 0
         self.spawn_new_piece()
 
     def get_game_state(self) -> Dict[str, Any]:
@@ -367,17 +431,21 @@ class TetrisGame:
                 "x": self.current_piece.x,
                 "y": self.current_piece.y,
                 "shape": self.current_piece.get_rotated_shape(),
-                "color": self.current_piece.color
+                "color": self.current_piece.color,
+                "is_bomb": self.current_piece.is_bomb
             } if self.current_piece else None,
             "next_piece": {
                 "shape": self.next_piece.shape,
-                "color": self.next_piece.color
+                "color": self.next_piece.color,
+                "is_bomb": self.next_piece.is_bomb
             } if self.next_piece else None,
             "bombs": [{"x": bomb.x, "y": bomb.y, "active": bomb.active} for bomb in self.bombs],
             "game_over": self.game_over,
+            "paused": self.paused,
             "score": self.score,
             "level": self.level,
             "lines_cleared": self.lines_cleared,
             "bombs_available": self.bombs_available,
-            "speed_multiplier": self.speed_multiplier
+            "speed_multiplier": self.speed_multiplier,
+            "lines_cleared_this_frame": self.lines_cleared_this_frame
         } 
