@@ -13,9 +13,38 @@ class TetrisWebGame {
         this.websocket = null;
         this.isConnected = false;
         
+        // 音声の初期化
+        this.sounds = {};
+        this.bgm = null;
+        this.loadSounds();
+        
         this.setupEventListeners();
         this.connectWebSocket();
-        this.startGame();
+        // WebSocket接続後にゲームを開始
+        setTimeout(() => {
+            this.startGame();
+        }, 1000);
+        
+        // ページ読み込み完了後にBGMを試行
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                this.playBGM();
+            }, 2000);
+        });
+        
+        // ユーザーインタラクションでBGM開始
+        document.addEventListener('click', () => {
+            if (this.bgm && this.bgm.paused) {
+                this.playBGM();
+            }
+        }, { once: true });
+        
+        // キーボードイベントでもBGM開始を試行
+        document.addEventListener('keydown', () => {
+            if (this.bgm && this.bgm.paused) {
+                this.playBGM();
+            }
+        }, { once: true });
     }
     
     setupEventListeners() {
@@ -47,9 +76,44 @@ class TetrisWebGame {
                 case 'b':
                 case 'B':
                     e.preventDefault();
-                    this.sendAction('place_bomb');
+                    this.sendAction('spawn_bomb');
+                    break;
+                case 'p':
+                case 'P':
+                    e.preventDefault();
+                    this.sendAction('pause');
+                    break;
+                case '+':
+                case '=':
+                case ';':  // Macの日本語キーボード
+                case ':':  // Macの日本語キーボード（Shift+;）
+                    e.preventDefault();
+                    this.sendAction('speed_up');
+                    break;
+                case '-':
+                case '_':  // Macの日本語キーボード（Shift+-）
+                    e.preventDefault();
+                    this.sendAction('speed_down');
                     break;
             }
+            
+            // キーコードベースの判定（Mac対応）
+            switch(e.keyCode || e.which) {
+                case 187: // = キー
+                case 59:  // ; キー
+                case 186: // ; キー（一部のMac）
+                    e.preventDefault();
+                    this.sendAction('speed_up');
+                    break;
+                case 189: // - キー
+                case 173: // - キー（一部のMac）
+                    e.preventDefault();
+                    this.sendAction('speed_down');
+                    break;
+            }
+            
+            // デバッグ用：キー情報をコンソールに出力
+            console.log('Key pressed:', e.key, 'KeyCode:', e.keyCode, 'Which:', e.which);
         });
         
         // モバイルコントロールボタン
@@ -74,12 +138,29 @@ class TetrisWebGame {
         });
         
         document.getElementById('bombBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('place_bomb');
+            if (this.isConnected) this.sendAction('spawn_bomb');
+        });
+        
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            if (this.isConnected) this.sendAction('pause');
+        });
+        
+        document.getElementById('speedUpBtn').addEventListener('click', () => {
+            if (this.isConnected) this.sendAction('speed_up');
+        });
+        
+        document.getElementById('speedDownBtn').addEventListener('click', () => {
+            if (this.isConnected) this.sendAction('speed_down');
         });
         
         // リスタートボタン
         document.getElementById('restartBtn').addEventListener('click', () => {
             this.startGame();
+        });
+        
+        // ミュートボタン
+        document.getElementById('muteBtn').addEventListener('click', () => {
+            this.toggleMute();
         });
         
         // ゲームボードのクリックイベント（爆弾配置用）
@@ -91,9 +172,85 @@ class TetrisWebGame {
             const y = Math.floor((e.clientY - rect.top) / this.blockSize);
             
             if (x >= 0 && x < this.boardWidth && y >= 0 && y < this.boardHeight) {
+                // クリックした位置に爆弾を配置
                 this.sendAction('place_bomb', x, y);
             }
         });
+    }
+    
+    loadSounds() {
+        // 音声ファイルを読み込み
+        try {
+            // 効果音の読み込み
+            this.sounds.move = new Audio('assets/sounds/move.wav');
+            this.sounds.rotate = new Audio('assets/sounds/rotate.wav');
+            this.sounds.drop = new Audio('assets/sounds/drop.wav');
+            this.sounds.clear = new Audio('assets/sounds/clear.wav');
+            this.sounds.bomb = new Audio('assets/sounds/bomb.wav');
+            this.sounds.gameover = new Audio('assets/sounds/gameover.wav');
+            
+            // BGMの読み込み
+            this.bgm = new Audio('assets/sounds/tetris_bgm_1.wav');
+            this.bgm.loop = true;
+            this.bgm.volume = 0.3;
+            this.bgm.preload = 'auto';
+            
+            // BGMの読み込み完了を待つ
+            this.bgm.addEventListener('canplaythrough', () => {
+                console.log('BGMの読み込みが完了しました');
+            });
+            
+            console.log('音声ファイルの読み込みが完了しました');
+        } catch (error) {
+            console.error('音声ファイルの読み込みに失敗しました:', error);
+        }
+    }
+    
+    playSound(soundName) {
+        // 効果音を再生
+        if (this.sounds[soundName]) {
+            this.sounds[soundName].currentTime = 0;
+            this.sounds[soundName].play().catch(e => {
+                console.log('効果音の再生に失敗:', e);
+            });
+        }
+    }
+    
+    playBGM() {
+        // BGMを再生
+        if (this.bgm) {
+            // ユーザーインタラクション後に再生を試行
+            const playPromise = this.bgm.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    console.log('BGMの再生に失敗:', e);
+                    // ユーザーインタラクションが必要な場合の処理
+                    document.addEventListener('click', () => {
+                        this.bgm.play().catch(e => console.log('BGM再生再試行失敗:', e));
+                    }, { once: true });
+                });
+            }
+        }
+    }
+    
+    stopBGM() {
+        // BGMを停止
+        if (this.bgm) {
+            this.bgm.pause();
+            this.bgm.currentTime = 0;
+        }
+    }
+    
+    toggleMute() {
+        // ミュートの切り替え
+        const muteBtn = document.getElementById('muteBtn');
+        if (this.bgm.muted) {
+            this.bgm.muted = false;
+            muteBtn.textContent = '🔊 ミュート';
+        } else {
+            this.bgm.muted = true;
+            muteBtn.textContent = '🔇 ミュート解除';
+        }
     }
     
     connectWebSocket() {
@@ -138,6 +295,24 @@ class TetrisWebGame {
     sendAction(action, x = null, y = null) {
         if (!this.isConnected) return;
         
+        // アクションに応じて効果音を再生
+        switch(action) {
+            case 'left':
+            case 'right':
+            case 'down':
+                this.playSound('move');
+                break;
+            case 'rotate':
+                this.playSound('rotate');
+                break;
+            case 'hard_drop':
+                this.playSound('drop');
+                break;
+            case 'spawn_bomb':
+                this.playSound('bomb');
+                break;
+        }
+        
         const message = { action };
         if (x !== null && y !== null) {
             message.x = x;
@@ -159,6 +334,8 @@ class TetrisWebGame {
             if (response.ok) {
                 const data = await response.json();
                 this.updateGameState(data.game_state);
+                // BGMを開始
+                this.playBGM();
             }
         } catch (error) {
             console.error('ゲーム開始エラー:', error);
@@ -166,6 +343,12 @@ class TetrisWebGame {
     }
     
     updateGameState(gameState) {
+        // ライン消去エフェクトの処理
+        if (gameState.lines_cleared_this_frame > 0) {
+            this.playSound('clear');
+            this.showLineClearEffect(gameState.lines_cleared_this_frame);
+        }
+        
         this.gameState = gameState;
         this.render();
         this.updateUI();
@@ -230,7 +413,11 @@ class TetrisWebGame {
         for (let y = 0; y < shape.length; y++) {
             for (let x = 0; x < shape[y].length; x++) {
                 if (shape[y][x]) {
-                    this.drawBlock(piece.x + x, piece.y + y, piece.color);
+                    if (piece.is_bomb) {
+                        this.drawBomb(piece.x + x, piece.y + y);
+                    } else {
+                        this.drawBlock(piece.x + x, piece.y + y, piece.color);
+                    }
                 }
             }
         }
@@ -264,13 +451,29 @@ class TetrisWebGame {
         for (let y = 0; y < shape.length; y++) {
             for (let x = 0; x < shape[y].length; x++) {
                 if (shape[y][x]) {
-                    this.drawBlockOnCanvas(
-                        this.nextCtx,
-                        startX + x * blockSize,
-                        startY + y * blockSize,
-                        blockSize,
-                        piece.color
-                    );
+                    if (piece.is_bomb) {
+                        // 爆弾ピースの描画
+                        const centerX = startX + x * blockSize + blockSize / 2;
+                        const centerY = startY + y * blockSize + blockSize / 2;
+                        const radius = blockSize / 3;
+                        
+                        this.nextCtx.fillStyle = '#ff4444';
+                        this.nextCtx.beginPath();
+                        this.nextCtx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                        this.nextCtx.fill();
+                        
+                        this.nextCtx.strokeStyle = '#000';
+                        this.nextCtx.lineWidth = 2;
+                        this.nextCtx.stroke();
+                    } else {
+                        this.drawBlockOnCanvas(
+                            this.nextCtx,
+                            startX + x * blockSize,
+                            startY + y * blockSize,
+                            blockSize,
+                            piece.color
+                        );
+                    }
                 }
             }
         }
@@ -304,10 +507,14 @@ class TetrisWebGame {
     drawBomb(x, y) {
         const centerX = x * this.blockSize + this.blockSize / 2;
         const centerY = y * this.blockSize + this.blockSize / 2;
-        const radius = 8;
+        const radius = this.blockSize / 2; // サイズを大きくする
         
-        // 爆弾の本体
-        this.ctx.fillStyle = '#ff4444';
+        // 爆弾の本体（グラデーション効果）
+        const gradient = this.ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+        gradient.addColorStop(0, '#ff6666');
+        gradient.addColorStop(1, '#cc0000');
+        
+        this.ctx.fillStyle = gradient;
         this.ctx.beginPath();
         this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         this.ctx.fill();
@@ -319,10 +526,18 @@ class TetrisWebGame {
         
         // 爆弾の導火線
         this.ctx.strokeStyle = '#ffaa00';
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         this.ctx.moveTo(centerX, centerY - radius);
-        this.ctx.lineTo(centerX, centerY - radius - 5);
+        this.ctx.lineTo(centerX, centerY - radius - 8);
+        this.ctx.stroke();
+        
+        // 火花エフェクト
+        this.ctx.strokeStyle = '#ffff00';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(centerX - 2, centerY - radius - 8);
+        this.ctx.lineTo(centerX + 2, centerY - radius - 12);
         this.ctx.stroke();
     }
     
@@ -334,14 +549,124 @@ class TetrisWebGame {
         document.getElementById('level').textContent = this.gameState.level;
         document.getElementById('lines').textContent = this.gameState.lines_cleared;
         document.getElementById('bombs').textContent = this.gameState.bombs_available;
+        document.getElementById('speed').textContent = this.gameState.speed_multiplier.toFixed(1) + 'x';
         
         // ゲームオーバー状態を更新
         const gameOverElement = document.getElementById('gameOver');
         if (this.gameState.game_over) {
             gameOverElement.classList.remove('hidden');
+            // ゲームオーバー時にBGMを停止し、効果音を再生
+            this.stopBGM();
+            this.playSound('gameover');
         } else {
             gameOverElement.classList.add('hidden');
         }
+        
+        // ポーズ状態を更新
+        const pauseBtn = document.getElementById('pauseBtn');
+        if (this.gameState.paused) {
+            pauseBtn.textContent = '▶️ 再開';
+        } else {
+            pauseBtn.textContent = '⏸️ ポーズ';
+        }
+    }
+    
+    showLineClearEffect(linesCleared) {
+        // ライン消去エフェクトを表示
+        const blockSize = this.canvas.width / this.boardWidth;
+        
+        // 消去されるラインを特定
+        const linesToClear = [];
+        for (let y = 0; y < this.boardHeight; y++) {
+            if (this.gameState.board[y].every(cell => cell !== 0)) {
+                linesToClear.push(y);
+            }
+        }
+        
+        // エフェクト用のオーバーレイ
+        const overlay = document.createElement('canvas');
+        overlay.width = this.canvas.width;
+        overlay.height = this.canvas.height;
+        overlay.style.position = 'absolute';
+        overlay.style.top = this.canvas.offsetTop + 'px';
+        overlay.style.left = this.canvas.offsetLeft + 'px';
+        overlay.style.pointerEvents = 'none';
+        overlay.style.zIndex = '10';
+        
+        document.body.appendChild(overlay);
+        const overlayCtx = overlay.getContext('2d');
+        
+        // ライン消去エフェクトの段階
+        let stage = 0;
+        const totalStages = 6;
+        const effectInterval = setInterval(() => {
+            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+            
+            switch(stage) {
+                case 0: // ラインを白く光らせる
+                    linesToClear.forEach(lineY => {
+                        overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
+                    });
+                    break;
+                    
+                case 1: // ラインを黄色く光らせる
+                    linesToClear.forEach(lineY => {
+                        overlayCtx.fillStyle = 'rgba(255, 255, 0, 0.9)';
+                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
+                    });
+                    break;
+                    
+                case 2: // ラインをオレンジに
+                    linesToClear.forEach(lineY => {
+                        overlayCtx.fillStyle = 'rgba(255, 165, 0, 1.0)';
+                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
+                    });
+                    break;
+                    
+                case 3: // ラインを赤く
+                    linesToClear.forEach(lineY => {
+                        overlayCtx.fillStyle = 'rgba(255, 0, 0, 1.0)';
+                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
+                    });
+                    break;
+                    
+                case 4: // 爆発エフェクト（小さな粒子）
+                    linesToClear.forEach(lineY => {
+                        for (let i = 0; i < 20; i++) {
+                            const x = Math.random() * overlay.width;
+                            const y = lineY * blockSize + Math.random() * blockSize;
+                            const size = Math.random() * 4 + 2;
+                            overlayCtx.fillStyle = `rgba(255, ${Math.random() * 255}, 0, 0.8)`;
+                            overlayCtx.fillRect(x, y, size, size);
+                        }
+                    });
+                    break;
+                    
+                case 5: // フェードアウト
+                    overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    overlayCtx.fillRect(0, 0, overlay.width, overlay.height);
+                    
+                    // ライン消去テキスト
+                    overlayCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                    overlayCtx.font = 'bold 28px Arial';
+                    overlayCtx.textAlign = 'center';
+                    overlayCtx.fillText(
+                        `${linesCleared} LINE${linesCleared > 1 ? 'S' : ''} CLEAR!`, 
+                        overlay.width / 2, 
+                        overlay.height / 2
+                    );
+                    break;
+            }
+            
+            stage++;
+            if (stage >= totalStages) {
+                clearInterval(effectInterval);
+                setTimeout(() => {
+                    document.body.removeChild(overlay);
+                }, 200);
+            }
+        }, 100);
     }
 }
 

@@ -27,6 +27,10 @@
                     <span class="label">爆弾:</span>
                     <span id="bombs">0</span>
                 </div>
+                <div class="info-item">
+                    <span class="label">速度:</span>
+                    <span id="speed">1.0x</span>
+                </div>
             </div>
         </div>
 
@@ -51,7 +55,9 @@
                     <p>↑: 回転</p>
                     <p>↓: 落下</p>
                     <p>Space: ハードドロップ</p>
-                    <p>B: 爆弾配置</p>
+                    <p>B: 爆弾ピース生成</p>
+                    <p>P: ポーズ</p>
+                    <p>+/-: 速度調整</p>
                 </div>
             </div>
         </div>
@@ -69,12 +75,22 @@
                 <button id="hardDropBtn" class="control-btn">ハードドロップ</button>
             </div>
             <div class="control-row">
-                <button id="bombBtn" class="control-btn bomb-btn">爆弾配置</button>
+                <button id="bombBtn" class="control-btn bomb-btn">爆弾ピース</button>
+            </div>
+            <div class="control-row">
+                <button id="pauseBtn" class="control-btn pause-btn">⏸️ ポーズ</button>
+            </div>
+            <div class="control-row">
+                            <button id="speedUpBtn" class="control-btn speed-btn">🚀 速度UP</button>
+            <button id="speedDownBtn" class="control-btn speed-btn">🐌 速度DOWN</button>
             </div>
         </div>
 
         <div class="connection-status">
             <span id="connectionStatus">接続中...</span>
+            <div class="audio-controls">
+                <button id="muteBtn" class="btn">🔊 ミュート</button>
+            </div>
         </div>
     </div>
 

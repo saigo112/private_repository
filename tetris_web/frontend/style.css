@@ -224,6 +224,16 @@ body {
     min-width: 140px;
 }
 
+.pause-btn {
+    background: linear-gradient(45deg, #feca57, #ff9ff3);
+    min-width: 120px;
+}
+
+.speed-btn {
+    background: linear-gradient(45deg, #48dbfb, #0abde3);
+    min-width: 100px;
+}
+
 .connection-status {
     text-align: center;
     padding: 10px;
@@ -231,6 +241,27 @@ body {
     border-radius: 10px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.audio-controls {
+    margin-top: 10px;
+}
+
+.audio-controls .btn {
+    background: linear-gradient(45deg, #4ecdc4, #44a08d);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.audio-controls .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
 }
 
 .hidden {
