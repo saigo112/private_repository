@@ -48,12 +48,19 @@ class TetrisWebGame {
     }
     
     setupOPScreen() {
-        // 難易度選択ボタンのイベント
+        // 難易度選択ボタンのイベント（重複登録を防ぐため、既存のリスナーをクリア）
         const difficultyBtns = document.querySelectorAll('.difficulty-btn');
         difficultyBtns.forEach(btn => {
+            // 既存のイベントリスナーを削除
+            btn.replaceWith(btn.cloneNode(true));
+        });
+        
+        // 新しいイベントリスナーを追加
+        const newDifficultyBtns = document.querySelectorAll('.difficulty-btn');
+        newDifficultyBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 // 以前の選択を解除
-                difficultyBtns.forEach(b => b.classList.remove('selected'));
+                newDifficultyBtns.forEach(b => b.classList.remove('selected'));
                 // 新しい選択を設定
                 btn.classList.add('selected');
                 // 選択された速度を保存
@@ -62,45 +69,73 @@ class TetrisWebGame {
             });
         });
         
-        // OP画面の開始ボタンイベント
+        // OP画面の開始ボタンイベント（重複登録を防ぐ）
         const startGameBtn = document.getElementById('startGameBtn');
         if (startGameBtn) {
-            startGameBtn.addEventListener('click', () => {
+            // 既存のイベントリスナーを削除
+            const newStartBtn = startGameBtn.cloneNode(true);
+            startGameBtn.parentNode.replaceChild(newStartBtn, startGameBtn);
+            
+            // 新しいイベントリスナーを追加
+            newStartBtn.addEventListener('click', () => {
+                console.log('ゲームスタートボタンがクリックされました');
                 this.startGameFromOP();
             });
         }
     }
 
     startGameFromOP() {
+        console.log('OP画面からゲーム開始を試行中...');
+        
         // OP画面を非表示にしてゲーム画面を表示
         const opScreen = document.getElementById('opScreen');
         const gameScreen = document.getElementById('gameScreen');
         
         if (opScreen && gameScreen) {
+            // 既存のWebSocket接続があれば完全切断
+            if (this.ws) {
+                this.ws.close();
+                this.ws = null;
+            }
+            
+            // 画面切り替え
             opScreen.style.display = 'none';
             gameScreen.classList.remove('hidden');
             
-            // ゲーム状態を完全リセット
+            // 全状態を完全リセット
             this.gameState = null;
             this.lastNextPiece = null;
             this.gameOverSoundPlayed = false;
+            this.isConnected = false;
+            this.gameStarted = false; // 一旦falseにしてから接続後にtrueに
+            
+            // ゲームオーバー画面を確実に隠す
+            const gameOverElement = document.getElementById('gameOver');
+            if (gameOverElement) {
+                gameOverElement.classList.add('hidden');
+            }
             
             // キャンバスを即座に完全クリア
             this.clearAllCanvases();
             
-            // ゲームを開始
-            this.gameStarted = true;
+            // 新しいWebSocket接続を開始
             this.connectWebSocket();
             
-            // WebSocket接続後にゲームを開始
-            setTimeout(() => {
-                this.startGame();
-            }, 1000);
+            // WebSocket接続完了後にゲームを開始
+            const waitForConnection = () => {
+                if (this.isConnected) {
+                    console.log('WebSocket接続完了、ゲームを開始します');
+                    this.gameStarted = true;
+                    this.startGame();
+                    this.playBGM();
+                } else {
+                    console.log('WebSocket接続待機中...');
+                    setTimeout(waitForConnection, 100);
+                }
+            };
             
-            // BGMを開始
-            setTimeout(() => {
-                this.playBGM();
-            }, 2000);
+            // 接続チェック開始
+            setTimeout(waitForConnection, 500);
         }
     }
 
@@ -933,23 +968,38 @@ class TetrisWebGame {
             opScreen.style.display = 'flex';
             gameScreen.classList.add('hidden');
             
-            // ゲーム状態をリセット
-            this.gameStarted = false;
-            this.gameState = null;
-            this.isConnected = false;
-            this.gameOverSoundPlayed = false;
+            // BGMを即座に停止
+            this.stopBGM();
             
-            // スコア表示を更新（個人ベスト & 世界記録）
-            this.updateScoreDisplays();
-            
-            // WebSocket接続を切断
+            // WebSocket接続を完全切断
             if (this.ws) {
                 this.ws.close();
                 this.ws = null;
             }
             
-            // BGMを停止
-            this.stopBGM();
+            // 全ての状態を完全リセット
+            this.gameStarted = false;
+            this.gameState = null;
+            this.isConnected = false;
+            this.gameOverSoundPlayed = false;
+            this.lastNextPiece = null;
+            
+            // キャンバスを完全クリア
+            this.clearAllCanvases();
+            
+            // ゲームオーバー画面を隠す
+            const gameOverElement = document.getElementById('gameOver');
+            if (gameOverElement) {
+                gameOverElement.classList.add('hidden');
+            }
+            
+            // スコア表示を更新（個人ベスト & 世界記録）
+            this.updateScoreDisplays();
+            
+            // OP画面のイベントリスナーを再設定
+            this.setupOPScreen();
+            
+            console.log('OP画面に完全リセットして戻りました');
         }
     }
     
