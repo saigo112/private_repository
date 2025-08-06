@@ -147,12 +147,9 @@ class TetrisWebGame {
             { id: 'leftBtn', action: 'left' },
             { id: 'rightBtn', action: 'right' },
             { id: 'downBtn', action: 'down' },
-            { id: 'rotateBtn', action: 'rotate' },
-            { id: 'hardDropBtn', action: 'hard_drop' },
+            { id: 'upBtn', action: 'rotate' },
             { id: 'bombBtn', action: 'spawn_bomb' },
-            { id: 'pauseBtn', action: 'pause' },
-            { id: 'speedUpBtn', action: 'speed_up' },
-            { id: 'speedDownBtn', action: 'speed_down' }
+            { id: 'pauseBtn', action: 'pause' }
         ];
         
         mobileButtons.forEach(button => {
