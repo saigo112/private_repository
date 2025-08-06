@@ -15,11 +15,11 @@ COPY frontend/ ./frontend
 # backendディレクトリをPythonパッケージとして認識させる
 RUN touch backend/__init__.py
 
-# Pythonパスを設定してbackendディレクトリを認識させる
-ENV PYTHONPATH=/app
-
 # Cloud Run が $PORT を使うため設定
 ENV PORT=8080
 
+# 作業ディレクトリをbackendに変更
+WORKDIR /app/backend
+
 # FastAPI アプリを起動
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
