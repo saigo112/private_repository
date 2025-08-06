@@ -159,9 +159,23 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # 静的ファイルの配信（APIエンドポイントの後にマウント）
 import os
+
+# ローカル環境とDocker環境の両方に対応
+def get_frontend_path():
+    # Docker環境の場合
+    if os.path.exists("/app/frontend"):
+        return "/app/frontend"
+    # ローカル環境の場合
+    else:
+        # backendディレクトリから見たfrontendディレクトリの相対パス
+        return os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+frontend_path = get_frontend_path()
+print(f"Frontend path: {frontend_path}")
+
 app.mount(
     "/",
-    StaticFiles(directory="/app/frontend", html=True),
+    StaticFiles(directory=frontend_path, html=True),
     name="static"
 )
 
