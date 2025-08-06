@@ -108,6 +108,7 @@ class TetrisWebGame {
             this.gameOverSoundPlayed = false;
             this.isConnected = false;
             this.gameStarted = false; // 一旦falseにしてから接続後にtrueに
+            this.returnToOP = false; // 新規ゲーム開始なので自動再接続を許可
             
             // ゲームオーバー画面を確実に隠す
             const gameOverElement = document.getElementById('gameOver');
@@ -373,14 +374,14 @@ class TetrisWebGame {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws`;
         
-        this.websocket = new WebSocket(wsUrl);
+        this.ws = new WebSocket(wsUrl);
         
-        this.websocket.onopen = () => {
+        this.ws.onopen = () => {
             this.isConnected = true;
             console.log('WebSocket接続済み');
         };
         
-        this.websocket.onmessage = (event) => {
+        this.ws.onmessage = (event) => {
             try {
                 const gameState = JSON.parse(event.data);
                 this.updateGameState(gameState);
@@ -389,14 +390,16 @@ class TetrisWebGame {
             }
         };
         
-        this.websocket.onclose = () => {
+        this.ws.onclose = () => {
             this.isConnected = false;
             console.log('WebSocket接続が切れました');
-            // 再接続を試行
-            setTimeout(() => this.connectWebSocket(), 3000);
+            // OP画面からの開始時は自動再接続しない
+            if (this.gameStarted && !this.returnToOP) {
+                setTimeout(() => this.connectWebSocket(), 3000);
+            }
         };
         
-        this.websocket.onerror = (error) => {
+        this.ws.onerror = (error) => {
             console.error('WebSocketエラー:', error);
             console.log('WebSocket接続エラー:', error);
         };
@@ -444,7 +447,7 @@ class TetrisWebGame {
             message.y = y;
         }
         
-        this.websocket.send(JSON.stringify(message));
+        this.ws.send(JSON.stringify(message));
     }
     
     async startGame() {
@@ -970,6 +973,9 @@ class TetrisWebGame {
             
             // BGMを即座に停止
             this.stopBGM();
+            
+            // 自動再接続を防ぐフラグ
+            this.returnToOP = true;
             
             // WebSocket接続を完全切断
             if (this.ws) {

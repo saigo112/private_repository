@@ -141,6 +141,13 @@ def get_or_create_game(websocket: WebSocket) -> TetrisGame:
     """WebSocket接続に対応するゲームインスタンスを取得または作成"""
     if websocket not in client_games:
         client_games[websocket] = TetrisGame()
+        print(f"新しいゲームインスタンスを作成しました: {id(client_games[websocket])}")
+    return client_games[websocket]
+
+def force_new_game(websocket: WebSocket) -> TetrisGame:
+    """WebSocket接続に対して強制的に新しいゲームインスタンスを作成"""
+    client_games[websocket] = TetrisGame()
+    print(f"強制的に新しいゲームインスタンスを作成しました: {id(client_games[websocket])}")
     return client_games[websocket]
 
 def remove_client_game(websocket: WebSocket):
@@ -211,8 +218,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 if action == "start":
                     initial_speed_multiplier = message.get("initial_speed_multiplier", 1.0)
-                    game.reset_game()
+                    # 完全に新しいゲームインスタンスを作成
+                    game = force_new_game(websocket)
                     game.speed_multiplier = initial_speed_multiplier
+                    print(f"新しいゲーム開始 - 速度倍率: {initial_speed_multiplier}")
                 elif action in ["left", "right", "down", "rotate", "hard_drop"]:
                     action_type = ActionType(action)
                     game.perform_action(action_type)
