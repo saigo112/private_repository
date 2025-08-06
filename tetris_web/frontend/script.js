@@ -21,6 +21,14 @@ class TetrisWebGame {
         // ゲームオーバー効果音の再生制御
         this.gameOverSoundPlayed = false;
         
+        // タッチドラッグ用の変数
+        this.isDragging = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.dragThreshold = 30; // ドラッグ判定の閾値（ピクセル）
+        this.lastDragTime = 0;
+        this.dragCooldown = 200; // ドラッグ操作のクールダウン（ミリ秒）
+        
         // 音声の初期化
         this.sounds = {};
         this.bgm = null;
@@ -165,6 +173,9 @@ class TetrisWebGame {
         document.getElementById('muteBtn').addEventListener('click', () => {
             this.toggleMute();
         });
+        
+        // ゲームボードのタッチドラッグ操作
+        this.setupTouchDrag();
         
         // ゲームボードのクリック・タッチイベント（爆弾配置用）
         const handleBoardInteraction = (e) => {
@@ -611,6 +622,80 @@ class TetrisWebGame {
             pauseBtn.textContent = '▶️ 再開';
         } else {
             pauseBtn.textContent = '⏸️ ポーズ';
+        }
+    }
+
+    setupTouchDrag() {
+        // タッチドラッグ操作の設定
+        const board = this.gameBoard;
+        
+        // タッチ開始
+        board.addEventListener('touchstart', (e) => {
+            if (!this.isConnected || !this.gameStarted) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            this.isDragging = true;
+            this.dragStartX = touch.clientX;
+            this.dragStartY = touch.clientY;
+        }, { passive: false });
+        
+        // タッチ移動
+        board.addEventListener('touchmove', (e) => {
+            if (!this.isConnected || !this.gameStarted || !this.isDragging) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - this.dragStartX;
+            const deltaY = touch.clientY - this.dragStartY;
+            
+            // ドラッグ距離が閾値を超えた場合のみ処理
+            if (Math.abs(deltaX) > this.dragThreshold || Math.abs(deltaY) > this.dragThreshold) {
+                const now = Date.now();
+                if (now - this.lastDragTime > this.dragCooldown) {
+                    this.handleDragGesture(deltaX, deltaY);
+                    this.lastDragTime = now;
+                    this.isDragging = false;
+                }
+            }
+        }, { passive: false });
+        
+        // タッチ終了
+        board.addEventListener('touchend', (e) => {
+            if (!this.isConnected || !this.gameStarted) return;
+            
+            e.preventDefault();
+            this.isDragging = false;
+        }, { passive: false });
+        
+        // タッチキャンセル
+        board.addEventListener('touchcancel', (e) => {
+            if (!this.isConnected || !this.gameStarted) return;
+            
+            e.preventDefault();
+            this.isDragging = false;
+        }, { passive: false });
+    }
+    
+    handleDragGesture(deltaX, deltaY) {
+        // ドラッグ方向に基づいてアクションを実行
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        
+        if (absX > absY) {
+            // 水平ドラッグ
+            if (deltaX > 0) {
+                this.sendAction('right');
+            } else {
+                this.sendAction('left');
+            }
+        } else {
+            // 垂直ドラッグ
+            if (deltaY > 0) {
+                this.sendAction('down');
+            } else {
+                this.sendAction('rotate');
+            }
         }
     }
 
