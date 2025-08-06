@@ -15,6 +15,9 @@ COPY frontend/ ./frontend
 # backendディレクトリをPythonパッケージとして認識させる
 RUN touch backend/__init__.py
 
+# Pythonパスを設定してbackendディレクトリを認識させる
+ENV PYTHONPATH=/app
+
 # Cloud Run が $PORT を使うため設定
 ENV PORT=8080
 
