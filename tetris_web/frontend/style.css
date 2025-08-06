@@ -8,14 +8,12 @@ body {
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     color: white;
     margin: 0;
     padding: 0;
-    overflow: hidden;
 }
 
 /* スマホ版のみ固定位置 */
@@ -28,6 +26,8 @@ body {
         left: 0;
         right: 0;
         bottom: 0;
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 }
 
@@ -245,18 +245,18 @@ body {
 .game-container {
     max-width: 1200px;
     width: 100%;
-    height: 100vh;
+    min-height: 100vh;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    overflow: hidden;
 }
 
 /* スマホ版のみ動的ビューポート */
 @media (max-width: 768px) {
     .game-container {
         height: 100dvh;
+        overflow: hidden;
     }
 }
 
@@ -299,6 +299,55 @@ body {
     
     .next-piece-container {
         display: none; /* PC版ではサイドバーに表示 */
+    }
+}
+
+/* スマホ版のヘッダー */
+@media (max-width: 768px) {
+    .game-title {
+        display: none; /* スマホ版ではタイトルを非表示 */
+    }
+    
+    .game-header {
+        padding: 2px 5px;
+        margin-bottom: 2px;
+        flex-shrink: 0;
+        gap: 5px;
+    }
+    
+    .game-info {
+        gap: 2px;
+        flex-wrap: wrap;
+    }
+    
+    .info-item {
+        font-size: 0.5rem;
+    }
+    
+    .info-item .label {
+        font-size: 0.5rem;
+    }
+    
+    .info-item span:last-child {
+        font-size: 0.7rem;
+    }
+    
+    .next-piece-container {
+        gap: 5px;
+        align-items: center;
+        flex-direction: row;
+    }
+    
+    .next-piece-container .label {
+        font-size: 0.5rem;
+        white-space: nowrap;
+        margin-right: 2px;
+    }
+    
+    #nextPiece {
+        width: 30px;
+        height: 18px;
+        flex-shrink: 0;
     }
 }
 
@@ -592,47 +641,7 @@ body {
         bottom: 0;
     }
     
-    .game-header {
-        padding: 2px 5px;
-        margin-bottom: 2px;
-        flex-shrink: 0;
-        gap: 5px;
-    }
-    
-    .game-info {
-        gap: 2px;
-        flex-wrap: wrap;
-    }
-    
-    .info-item {
-        font-size: 0.5rem;
-    }
-    
-    .info-item .label {
-        font-size: 0.5rem;
-    }
-    
-    .info-item span:last-child {
-        font-size: 0.7rem;
-    }
-    
-    .next-piece-container {
-        gap: 5px;
-        align-items: center;
-        flex-direction: row;
-    }
-    
-    .next-piece-container .label {
-        font-size: 0.5rem;
-        white-space: nowrap;
-        margin-right: 2px;
-    }
-    
-    #nextPiece {
-        width: 30px;
-        height: 18px;
-        flex-shrink: 0;
-    }
+    /* 480px以下では768px以下の設定を継承 */
     
     .game-main {
         flex: 1;

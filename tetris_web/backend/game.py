@@ -135,7 +135,7 @@ class TetrisGame:
         self.lines_cleared_this_frame = 0  # ライン消去エフェクト用
         
         # 接地時の移動・回転可能時間
-        self.lock_delay = 500  # 0.5秒
+        self.lock_delay = 200  # 0.2秒
         self.lock_time = 0
         self.is_locked = False
         
@@ -422,7 +422,17 @@ class TetrisGame:
         elif action == ActionType.RIGHT:
             return self.move_piece(1, 0)
         elif action == ActionType.DOWN:
-            return self.move_piece(0, 1)
+            # ↓ボタンで高速落下（複数マス落下）
+            moved = False
+            for _ in range(3):  # 最大3マス落下
+                if self.move_piece(0, 1):
+                    moved = True
+                else:
+                    # 接地した場合、ロック遅延を短縮
+                    if self.is_locked:
+                        self.lock_delay = 50  # 即座に配置
+                    break
+            return moved
         elif action == ActionType.ROTATE:
             return self.rotate_piece()
         elif action == ActionType.HARD_DROP:
@@ -465,7 +475,7 @@ class TetrisGame:
         self.lines_cleared_this_frame = 0
         
         # リセット時に新しい変数も初期化
-        self.lock_delay = 500
+        self.lock_delay = 200
         self.lock_time = 0
         self.is_locked = False
         self.line_clear_delay = 250
