@@ -80,6 +80,14 @@ class TetrisWebGame {
             opScreen.style.display = 'none';
             gameScreen.classList.remove('hidden');
             
+            // ゲーム状態を完全リセット
+            this.gameState = null;
+            this.lastNextPiece = null;
+            this.gameOverSoundPlayed = false;
+            
+            // キャンバスを即座に完全クリア
+            this.clearAllCanvases();
+            
             // ゲームを開始
             this.gameStarted = true;
             this.connectWebSocket();
@@ -93,6 +101,28 @@ class TetrisWebGame {
             setTimeout(() => {
                 this.playBGM();
             }, 2000);
+        }
+    }
+
+    clearAllCanvases() {
+        try {
+            // メインゲームボードをクリア
+            if (this.ctx) {
+                this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            }
+            
+            // 次のピースキャンバスをクリア
+            if (this.nextCtx) {
+                this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+                this.nextCtx.fillStyle = '#222';
+                this.nextCtx.fillRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            }
+            
+            console.log('キャンバスをクリアしました');
+        } catch (error) {
+            console.error('キャンバスクリアエラー:', error);
         }
     }
 
@@ -387,9 +417,8 @@ class TetrisWebGame {
             // ゲームオーバー効果音フラグをリセット
             this.gameOverSoundPlayed = false;
             
-            // ゲームボードをクリア
-            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
-            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            // キャンバスを完全クリア
+            this.clearAllCanvases();
             
             // WebSocket経由でゲーム開始と初期速度を送信
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -419,18 +448,12 @@ class TetrisWebGame {
             // ゲームオーバー効果音フラグをリセット
             this.gameOverSoundPlayed = false;
             
-            // ゲームボードを完全にクリア
-            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.gameBoard.width, this.gameBoard.height);
-            
-            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
-            this.nextCtx.fillStyle = '#222';
-            this.nextCtx.fillRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
-            
             // ゲーム状態をリセット
             this.gameState = null;
             this.lastNextPiece = null;
+            
+            // キャンバスを完全クリア
+            this.clearAllCanvases();
             
             // WebSocket経由でゲーム再開（選択済みの難易度を維持）
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -458,10 +481,9 @@ class TetrisWebGame {
         
         this.gameState = gameState;
         
-        // ゲームオーバー時はボードをクリア
+        // ゲームオーバー時はボードを完全クリア
         if (gameState.game_over) {
-            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
-            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            this.clearAllCanvases();
         }
         
         this.render();
