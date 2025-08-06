@@ -159,6 +159,8 @@ async def websocket_endpoint(websocket: WebSocket):
 
 # 静的ファイルの配信（APIエンドポイントの後にマウント）
 import os
+from fastapi.responses import FileResponse
+from fastapi import Request
 
 # ローカル環境とDocker環境の両方に対応
 def get_frontend_path():
@@ -172,6 +174,19 @@ def get_frontend_path():
 
 frontend_path = get_frontend_path()
 print(f"Frontend path: {frontend_path}")
+
+# キャッシュ制御付きの静的ファイル配信
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    
+    # 静的ファイルの場合、キャッシュを無効化
+    if request.url.path.endswith(('.css', '.js', '.html')):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
+    return response
 
 app.mount(
     "/",
