@@ -21,8 +21,8 @@ async def game_update_task():
             for websocket, game in client_games.items():
                 try:
                     game.update(current_time)
-                    # 更新された状態をそのクライアントに送信
-                    await websocket.send_text(json.dumps(game.get_game_state()))
+                    # 更新された状態をそのクライアントに送信（非同期で送信）
+                    asyncio.create_task(websocket.send_text(json.dumps(game.get_game_state())))
                 except Exception as e:
                     print(f"クライアント {websocket} のゲーム更新エラー: {e}")
                     disconnected_clients.append(websocket)
@@ -35,7 +35,7 @@ async def game_update_task():
         except Exception as e:
             print(f"ゲーム更新タスクエラー: {e}")
         
-        await asyncio.sleep(0.1)  # 100ms間隔で更新
+        await asyncio.sleep(0.016)  # 約60FPS（16ms間隔）で更新
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

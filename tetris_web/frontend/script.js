@@ -16,7 +16,7 @@ class TetrisWebGame {
         
         // 連打対策用の変数
         this.lastActionTime = {};
-        this.actionCooldown = 100; // ミリ秒
+        this.actionCooldown = 50; // ミリ秒（100ms → 50msに短縮）
         
         // ゲームオーバー効果音の再生制御
         this.gameOverSoundPlayed = false;
@@ -25,9 +25,12 @@ class TetrisWebGame {
         this.isDragging = false;
         this.dragStartX = 0;
         this.dragStartY = 0;
-        this.dragThreshold = 15; // ドラッグ判定の閾値（ピクセル）
+        this.dragThreshold = 10; // ドラッグ判定の閾値（ピクセル）
         this.lastDragTime = 0;
-        this.dragCooldown = 150; // ドラッグ操作のクールダウン（ミリ秒）
+        this.dragCooldown = 100; // ドラッグ操作のクールダウン（ミリ秒）
+        
+        // レンダリング最適化用の変数
+        this.lastNextPiece = null;
         
         // 音声の初期化
         this.sounds = {};
@@ -364,6 +367,10 @@ class TetrisWebGame {
             // ゲームオーバー効果音フラグをリセット
             this.gameOverSoundPlayed = false;
             
+            // ゲームボードをクリア
+            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            
             const response = await fetch('/start', {
                 method: 'POST',
                 headers: {
@@ -390,6 +397,13 @@ class TetrisWebGame {
         }
         
         this.gameState = gameState;
+        
+        // ゲームオーバー時はボードをクリア
+        if (gameState.game_over) {
+            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+        }
+        
         this.render();
         this.updateUI();
     }
@@ -406,8 +420,11 @@ class TetrisWebGame {
         // 爆弾の描画
         this.renderBombs();
         
-        // 次のピースの描画
-        this.renderNextPiece();
+        // 次のピースの描画（変更があった場合のみ）
+        if (this.lastNextPiece !== JSON.stringify(this.gameState.next_piece)) {
+            this.renderNextPiece();
+            this.lastNextPiece = JSON.stringify(this.gameState.next_piece);
+        }
     }
     
     renderBoard() {
@@ -758,71 +775,28 @@ class TetrisWebGame {
         document.body.appendChild(overlay);
         const overlayCtx = overlay.getContext('2d');
         
-        // ライン消去エフェクトの段階
-        let stage = 0;
-        const totalStages = 6;
+        // 左から徐々に消えるエフェクト
+        let progress = 0;
+        const totalDuration = 250; // 0.25秒
         const effectInterval = setInterval(() => {
             overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
             
-            switch(stage) {
-                case 0: // ラインを白く光らせる
-                    linesToClear.forEach(lineY => {
-                        overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
-                    });
-                    break;
-                    
-                case 1: // ラインを黄色く光らせる
-                    linesToClear.forEach(lineY => {
-                        overlayCtx.fillStyle = 'rgba(255, 255, 0, 0.9)';
-                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
-                    });
-                    break;
-                    
-                case 2: // ラインをオレンジに
-                    linesToClear.forEach(lineY => {
-                        overlayCtx.fillStyle = 'rgba(255, 165, 0, 1.0)';
-                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
-                    });
-                    break;
-                    
-                case 3: // ラインを赤く
-                    linesToClear.forEach(lineY => {
-                        overlayCtx.fillStyle = 'rgba(255, 0, 0, 1.0)';
-                        overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
-                    });
-                    break;
-                    
-                case 4: // 爆発エフェクト（小さな粒子）
-                    linesToClear.forEach(lineY => {
-                        for (let i = 0; i < 20; i++) {
-                            const x = Math.random() * overlay.width;
-                            const y = lineY * blockSize + Math.random() * blockSize;
-                            const size = Math.random() * 4 + 2;
-                            overlayCtx.fillStyle = `rgba(255, ${Math.random() * 255}, 0, 0.8)`;
-                            overlayCtx.fillRect(x, y, size, size);
-                        }
-                    });
-                    break;
-                    
-                case 5: // フェードアウト
-                    overlayCtx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                    overlayCtx.fillRect(0, 0, overlay.width, overlay.height);
-                    
-                    // ライン消去テキスト
-                    overlayCtx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-                    overlayCtx.font = 'bold 28px Arial';
-                    overlayCtx.textAlign = 'center';
-                    overlayCtx.fillText(
-                        `${linesCleared} LINE${linesCleared > 1 ? 'S' : ''} CLEAR!`, 
-                        overlay.width / 2, 
-                        overlay.height / 2
-                    );
-                    break;
-            }
+            // 進捗に応じて左から消える
+            const clearWidth = (progress / totalDuration) * overlay.width;
             
-            stage++;
-            if (stage >= totalStages) {
+            linesToClear.forEach(lineY => {
+                // 左から徐々に消えるエフェクト
+                const gradient = overlayCtx.createLinearGradient(0, 0, overlay.width, 0);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                gradient.addColorStop(clearWidth / overlay.width, 'rgba(255, 255, 255, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.8)');
+                
+                overlayCtx.fillStyle = gradient;
+                overlayCtx.fillRect(0, lineY * blockSize, overlay.width, blockSize);
+            });
+            
+            progress += 16; // 約60FPS
+            if (progress >= totalDuration) {
                 clearInterval(effectInterval);
                 setTimeout(() => {
                     document.body.removeChild(overlay);

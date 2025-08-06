@@ -140,7 +140,7 @@ class TetrisGame:
         self.is_locked = False
         
         # ライン消去エフェクトの遅延
-        self.line_clear_delay = 500  # 0.5秒
+        self.line_clear_delay = 250  # 0.25秒
         self.line_clear_time = 0
         self.pending_line_clear = False
         self.pending_lines = 0
@@ -378,7 +378,11 @@ class TetrisGame:
             if self.line_clear_time >= self.line_clear_delay:
                 self.pending_line_clear = False
                 self.lines_cleared_this_frame = self.pending_lines
+                # ライン消去後に新しいピースを生成
                 self.spawn_new_piece()
+                # ゲームオーバーチェック
+                if self.game_over:
+                    return
                 return
 
         # 自動落下
@@ -464,7 +468,7 @@ class TetrisGame:
         self.lock_delay = 500
         self.lock_time = 0
         self.is_locked = False
-        self.line_clear_delay = 500
+        self.line_clear_delay = 250
         self.line_clear_time = 0
         self.pending_line_clear = False
         self.pending_lines = 0

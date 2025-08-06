@@ -521,18 +521,21 @@ body {
     }
     
     .next-piece-container {
-        gap: 3px;
+        gap: 5px;
         align-items: center;
+        flex-direction: row;
     }
     
     .next-piece-container .label {
         font-size: 0.5rem;
         white-space: nowrap;
+        margin-right: 2px;
     }
     
     #nextPiece {
-        width: 35px;
-        height: 20px;
+        width: 30px;
+        height: 18px;
+        flex-shrink: 0;
     }
     
     .game-main {
