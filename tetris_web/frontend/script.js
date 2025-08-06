@@ -25,9 +25,9 @@ class TetrisWebGame {
         this.isDragging = false;
         this.dragStartX = 0;
         this.dragStartY = 0;
-        this.dragThreshold = 30; // ドラッグ判定の閾値（ピクセル）
+        this.dragThreshold = 15; // ドラッグ判定の閾値（ピクセル）
         this.lastDragTime = 0;
-        this.dragCooldown = 200; // ドラッグ操作のクールダウン（ミリ秒）
+        this.dragCooldown = 150; // ドラッグ操作のクールダウン（ミリ秒）
         
         // 音声の初期化
         this.sounds = {};
@@ -657,13 +657,24 @@ class TetrisWebGame {
             }
         }, { passive: false });
         
-        // タッチ終了
+        // タッチ終了時にも処理
         board.addEventListener('touchend', (e) => {
-            if (!this.isConnected || !this.gameStarted) return;
+            if (!this.isConnected || !this.gameStarted || !this.isDragging) return;
             
             e.preventDefault();
+            const touch = e.changedTouches[0];
+            const deltaX = touch.clientX - this.dragStartX;
+            const deltaY = touch.clientY - this.dragStartY;
+            
+            // 短いタップの場合は回転
+            if (Math.abs(deltaX) < this.dragThreshold && Math.abs(deltaY) < this.dragThreshold) {
+                this.sendAction('rotate');
+            }
+            
             this.isDragging = false;
         }, { passive: false });
+        
+
         
         // タッチキャンセル
         board.addEventListener('touchcancel', (e) => {
@@ -724,7 +735,7 @@ class TetrisWebGame {
     
     showLineClearEffect(linesCleared) {
         // ライン消去エフェクトを表示
-        const blockSize = this.canvas.width / this.boardWidth;
+        const blockSize = this.gameBoard.width / this.boardWidth;
         
         // 消去されるラインを特定
         const linesToClear = [];
@@ -736,11 +747,11 @@ class TetrisWebGame {
         
         // エフェクト用のオーバーレイ
         const overlay = document.createElement('canvas');
-        overlay.width = this.canvas.width;
-        overlay.height = this.canvas.height;
+        overlay.width = this.gameBoard.width;
+        overlay.height = this.gameBoard.height;
         overlay.style.position = 'absolute';
-        overlay.style.top = this.canvas.offsetTop + 'px';
-        overlay.style.left = this.canvas.offsetLeft + 'px';
+        overlay.style.top = this.gameBoard.offsetTop + 'px';
+        overlay.style.left = this.gameBoard.offsetLeft + 'px';
         overlay.style.pointerEvents = 'none';
         overlay.style.zIndex = '10';
         

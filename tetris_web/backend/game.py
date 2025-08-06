@@ -134,6 +134,17 @@ class TetrisGame:
         self.paused = False
         self.lines_cleared_this_frame = 0  # ライン消去エフェクト用
         
+        # 接地時の移動・回転可能時間
+        self.lock_delay = 500  # 0.5秒
+        self.lock_time = 0
+        self.is_locked = False
+        
+        # ライン消去エフェクトの遅延
+        self.line_clear_delay = 500  # 0.5秒
+        self.line_clear_time = 0
+        self.pending_line_clear = False
+        self.pending_lines = 0
+        
         self.spawn_new_piece()
 
     def spawn_new_piece(self):
@@ -198,8 +209,14 @@ class TetrisGame:
                         if board_y >= 0:
                             self.board[board_y][board_x] = self.current_piece.color
         
+        # ライン消去を遅延実行
         lines_cleared = self.clear_lines()
-        self.spawn_new_piece()
+        if lines_cleared > 0:
+            self.pending_line_clear = True
+            self.pending_lines = lines_cleared
+            self.line_clear_time = 0
+        else:
+            self.spawn_new_piece()
         
         # ライン消去エフェクト用のフラグ
         if lines_cleared > 0:
@@ -267,9 +284,9 @@ class TetrisGame:
 
     def move_piece(self, dx: int, dy: int) -> bool:
         """ピースを移動"""
-        if not self.current_piece:
+        if not self.current_piece or self.pending_line_clear:
             return False
-            
+        
         new_x = self.current_piece.x + dx
         new_y = self.current_piece.y + dy
         
@@ -281,7 +298,7 @@ class TetrisGame:
 
     def rotate_piece(self) -> bool:
         """ピースを回転"""
-        if not self.current_piece:
+        if not self.current_piece or self.pending_line_clear:
             return False
             
         # 回転前の状態を保存
@@ -355,10 +372,30 @@ class TetrisGame:
         if self.game_over or self.paused:
             return
 
+        # ライン消去の遅延処理
+        if self.pending_line_clear:
+            self.line_clear_time += 16  # 約60FPS
+            if self.line_clear_time >= self.line_clear_delay:
+                self.pending_line_clear = False
+                self.lines_cleared_this_frame = self.pending_lines
+                self.spawn_new_piece()
+                return
+
         # 自動落下
         if current_time - self.fall_time > self.fall_speed:
             if not self.move_piece(0, 1):
-                self.place_piece()
+                # ピースが接地した場合
+                if not self.is_locked:
+                    self.is_locked = True
+                    self.lock_time = current_time
+                else:
+                    # ロック時間が経過したら配置
+                    if current_time - self.lock_time >= self.lock_delay:
+                        self.place_piece()
+                        self.is_locked = False
+            else:
+                # 移動できた場合はロック状態をリセット
+                self.is_locked = False
             self.fall_time = current_time
         
         # 積み上がりチェック
@@ -367,8 +404,9 @@ class TetrisGame:
         # 爆弾爆発の処理
         self.explode_bombs()
         
-        # ライン消去エフェクトフラグをリセット
-        self.lines_cleared_this_frame = 0
+        # ライン消去エフェクトフラグをリセット（遅延処理中はリセットしない）
+        if not self.pending_line_clear:
+            self.lines_cleared_this_frame = 0
 
     def perform_action(self, action: ActionType, **kwargs) -> bool:
         """アクションを実行"""
@@ -421,6 +459,16 @@ class TetrisGame:
         self.speed_multiplier = 1.0
         self.paused = False
         self.lines_cleared_this_frame = 0
+        
+        # リセット時に新しい変数も初期化
+        self.lock_delay = 500
+        self.lock_time = 0
+        self.is_locked = False
+        self.line_clear_delay = 500
+        self.line_clear_time = 0
+        self.pending_line_clear = False
+        self.pending_lines = 0
+        
         self.spawn_new_piece()
 
     def get_game_state(self) -> Dict[str, Any]:
