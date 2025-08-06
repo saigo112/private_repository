@@ -1,5 +1,5 @@
-const CACHE_NAME = 'tetris-web-v2';
-const STATIC_CACHE = 'tetris-static-v2';
+const CACHE_NAME = 'tetris-web-v3';
+const STATIC_CACHE = 'tetris-static-v3';
 
 // 即座にキャッシュすべき重要なリソース
 const CORE_ASSETS = [
