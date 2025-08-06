@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import json
 import time
 import asyncio
-from game import TetrisGame, ActionType
+from .game import TetrisGame, ActionType
 
 # ゲーム状態の自動更新タスク
 async def game_update_task():
