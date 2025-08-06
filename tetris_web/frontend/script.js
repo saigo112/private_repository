@@ -16,7 +16,7 @@ class TetrisWebGame {
         
         // 連打対策用の変数
         this.lastActionTime = {};
-        this.actionCooldown = 25; // ミリ秒（50ms → 25msに短縮）
+        this.actionCooldown = 10; // ミリ秒（25ms → 10msに短縮、超高速レスポンス）
         
         // ゲームオーバー効果音の再生制御
         this.gameOverSoundPlayed = false;
@@ -25,12 +25,13 @@ class TetrisWebGame {
         this.isDragging = false;
         this.dragStartX = 0;
         this.dragStartY = 0;
-        this.dragThreshold = 5; // ドラッグ判定の閾値（ピクセル）
+        this.dragThreshold = 3; // ドラッグ判定の閾値（5px → 3pxに短縮、超高感度）
         this.lastDragTime = 0;
-        this.dragCooldown = 50; // ドラッグ操作のクールダウン（ミリ秒）
+        this.dragCooldown = 20; // ドラッグ操作のクールダウン（50ms → 20msに短縮）
         
         // レンダリング最適化用の変数
         this.lastNextPiece = null;
+        this.renderScheduled = false;
         
         // 難易度設定
         this.selectedDifficulty = 1.0; // デフォルトは普通（1.0倍速）
@@ -244,9 +245,16 @@ class TetrisWebGame {
         mobileButtons.forEach(button => {
             const element = document.getElementById(button.id);
             if (element) {
+                // クリックイベント（PC用）
                 element.addEventListener('click', () => {
                     if (this.isConnected) this.sendAction(button.action);
                 });
+                
+                // タッチスタートイベント（モバイル高速レスポンス用）
+                element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (this.isConnected) this.sendAction(button.action);
+                }, { passive: false });
             }
         });
         
@@ -447,7 +455,14 @@ class TetrisWebGame {
             message.y = y;
         }
         
-        this.ws.send(JSON.stringify(message));
+        // 高速送信（エラーハンドリング付き）
+        try {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify(message));
+            }
+        } catch (error) {
+            console.warn('WebSocket送信エラー:', error);
+        }
     }
     
     async startGame() {
@@ -524,8 +539,15 @@ class TetrisWebGame {
             this.clearAllCanvases();
         }
         
-        this.render();
-        this.updateUI();
+        // 高速描画最適化
+        if (!this.renderScheduled) {
+            this.renderScheduled = true;
+            requestAnimationFrame(() => {
+                this.render();
+                this.updateUI();
+                this.renderScheduled = false;
+            });
+        }
     }
     
     render() {
@@ -766,7 +788,7 @@ class TetrisWebGame {
         // タッチドラッグ操作の設定
         const board = this.gameBoard;
         
-        // タッチ開始
+        // タッチ開始（高速化）
         board.addEventListener('touchstart', (e) => {
             if (!this.isConnected || !this.gameStarted) return;
             
@@ -775,6 +797,7 @@ class TetrisWebGame {
             this.isDragging = true;
             this.dragStartX = touch.clientX;
             this.dragStartY = touch.clientY;
+            this.lastDragTime = Date.now(); // 初期時間設定
         }, { passive: false });
         
         // タッチ移動
@@ -786,14 +809,13 @@ class TetrisWebGame {
             const deltaX = touch.clientX - this.dragStartX;
             const deltaY = touch.clientY - this.dragStartY;
             
-            // ドラッグ距離が閾値を超えた場合のみ処理
+            // ドラッグ距離が閾値を超えた場合のみ処理（高速化）
             if (Math.abs(deltaX) > this.dragThreshold || Math.abs(deltaY) > this.dragThreshold) {
                 const now = Date.now();
                 if (now - this.lastDragTime > this.dragCooldown) {
                     this.handleDragGesture(deltaX, deltaY);
                     this.lastDragTime = now;
-                    // ドラッグ状態をリセットして次の操作を可能にする
-                    this.isDragging = false;
+                    // ドラッグ状態をリセットして連続操作を可能にする
                     this.dragStartX = touch.clientX;
                     this.dragStartY = touch.clientY;
                 }
