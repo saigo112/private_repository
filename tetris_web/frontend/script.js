@@ -14,6 +14,13 @@ class TetrisWebGame {
         this.isConnected = false;
         this.gameStarted = false;
         
+        // 連打対策用の変数
+        this.lastActionTime = {};
+        this.actionCooldown = 100; // ミリ秒
+        
+        // ゲームオーバー効果音の再生制御
+        this.gameOverSoundPlayed = false;
+        
         // 音声の初期化
         this.sounds = {};
         this.bgm = null;
@@ -127,41 +134,26 @@ class TetrisWebGame {
             console.log('Key pressed:', e.key, 'KeyCode:', e.keyCode, 'Which:', e.which);
         });
         
-        // モバイルコントロールボタン
-        document.getElementById('leftBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('left');
-        });
+        // モバイルコントロールボタン（連打対策付き）
+        const mobileButtons = [
+            { id: 'leftBtn', action: 'left' },
+            { id: 'rightBtn', action: 'right' },
+            { id: 'downBtn', action: 'down' },
+            { id: 'rotateBtn', action: 'rotate' },
+            { id: 'hardDropBtn', action: 'hard_drop' },
+            { id: 'bombBtn', action: 'spawn_bomb' },
+            { id: 'pauseBtn', action: 'pause' },
+            { id: 'speedUpBtn', action: 'speed_up' },
+            { id: 'speedDownBtn', action: 'speed_down' }
+        ];
         
-        document.getElementById('rightBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('right');
-        });
-        
-        document.getElementById('downBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('down');
-        });
-        
-        document.getElementById('rotateBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('rotate');
-        });
-        
-        document.getElementById('hardDropBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('hard_drop');
-        });
-        
-        document.getElementById('bombBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('spawn_bomb');
-        });
-        
-        document.getElementById('pauseBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('pause');
-        });
-        
-        document.getElementById('speedUpBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('speed_up');
-        });
-        
-        document.getElementById('speedDownBtn').addEventListener('click', () => {
-            if (this.isConnected) this.sendAction('speed_down');
+        mobileButtons.forEach(button => {
+            const element = document.getElementById(button.id);
+            if (element) {
+                element.addEventListener('click', () => {
+                    if (this.isConnected) this.sendAction(button.action);
+                });
+            }
         });
         
         // リスタートボタン
@@ -174,19 +166,33 @@ class TetrisWebGame {
             this.toggleMute();
         });
         
-        // ゲームボードのクリックイベント（爆弾配置用）
-        this.gameBoard.addEventListener('click', (e) => {
+        // ゲームボードのクリック・タッチイベント（爆弾配置用）
+        const handleBoardInteraction = (e) => {
             if (!this.isConnected) return;
             
             const rect = this.gameBoard.getBoundingClientRect();
-            const x = Math.floor((e.clientX - rect.left) / this.blockSize);
-            const y = Math.floor((e.clientY - rect.top) / this.blockSize);
+            let clientX, clientY;
+            
+            // タッチイベントとマウスイベントの両方に対応
+            if (e.touches && e.touches[0]) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            const x = Math.floor((clientX - rect.left) / this.blockSize);
+            const y = Math.floor((clientY - rect.top) / this.blockSize);
             
             if (x >= 0 && x < this.boardWidth && y >= 0 && y < this.boardHeight) {
-                // クリックした位置に爆弾を配置
+                // クリック/タッチした位置に爆弾を配置
                 this.sendAction('place_bomb', x, y);
             }
-        });
+        };
+        
+        this.gameBoard.addEventListener('click', handleBoardInteraction);
+        this.gameBoard.addEventListener('touchstart', handleBoardInteraction);
     }
     
     loadSounds() {
@@ -220,6 +226,11 @@ class TetrisWebGame {
     playSound(soundName) {
         // 効果音を再生
         if (this.sounds[soundName]) {
+            // ゲームオーバー効果音の場合は特別な処理
+            if (soundName === 'gameover' && this.gameOverSoundPlayed) {
+                return; // 既に再生済みの場合はスキップ
+            }
+            
             this.sounds[soundName].currentTime = 0;
             this.sounds[soundName].play().catch(e => {
                 console.log('効果音の再生に失敗:', e);
@@ -306,6 +317,13 @@ class TetrisWebGame {
     sendAction(action, x = null, y = null) {
         if (!this.isConnected) return;
         
+        // 連打対策
+        const now = Date.now();
+        if (this.lastActionTime[action] && (now - this.lastActionTime[action]) < this.actionCooldown) {
+            return; // クールダウン中はアクションを無視
+        }
+        this.lastActionTime[action] = now;
+        
         // アクションに応じて効果音を再生
         switch(action) {
             case 'left':
@@ -335,6 +353,9 @@ class TetrisWebGame {
     
     async startGame() {
         try {
+            // ゲームオーバー効果音フラグをリセット
+            this.gameOverSoundPlayed = false;
+            
             const response = await fetch('/start', {
                 method: 'POST',
                 headers: {
@@ -566,16 +587,22 @@ class TetrisWebGame {
         const gameOverElement = document.getElementById('gameOver');
         if (this.gameState.game_over) {
             gameOverElement.classList.remove('hidden');
-            // ゲームオーバー時にBGMを停止し、効果音を再生
-            this.stopBGM();
-            this.playSound('gameover');
             
-            // 3秒後にOP画面に戻る
-            setTimeout(() => {
-                this.returnToOPScreen();
-            }, 3000);
+            // ゲームオーバー効果音を一度だけ再生
+            if (!this.gameOverSoundPlayed) {
+                this.stopBGM();
+                this.playSound('gameover');
+                this.gameOverSoundPlayed = true;
+                
+                // 3秒後にOP画面に戻る
+                setTimeout(() => {
+                    this.returnToOPScreen();
+                }, 3000);
+            }
         } else {
             gameOverElement.classList.add('hidden');
+            // ゲームが再開されたらフラグをリセット
+            this.gameOverSoundPlayed = false;
         }
         
         // ポーズ状態を更新
@@ -600,6 +627,7 @@ class TetrisWebGame {
             this.gameStarted = false;
             this.gameState = null;
             this.isConnected = false;
+            this.gameOverSoundPlayed = false;
             
             // WebSocket接続を切断
             if (this.websocket) {
