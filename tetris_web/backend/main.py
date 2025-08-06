@@ -93,7 +93,7 @@ async def broadcast_game_state():
 # @app.get("/", response_class=HTMLResponse)
 # async def get_index():
 #     """メインページを返す"""
-#     with open("../frontend/index.html", "r", encoding="utf-8") as f:
+#     with open("/app/frontend/index.html", "r", encoding="utf-8") as f:
 #         return HTMLResponse(content=f.read())
 
 @app.post("/start")
@@ -182,7 +182,12 @@ async def websocket_endpoint(websocket: WebSocket):
         connected_clients.remove(websocket)
 
 # 静的ファイルの配信（APIエンドポイントの後にマウント）
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="static")
+import os
+app.mount(
+    "/",
+    StaticFiles(directory="/app/frontend", html=True),
+    name="static"
+)
 
 if __name__ == "__main__":
     import uvicorn
