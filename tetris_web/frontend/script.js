@@ -162,14 +162,12 @@ class TetrisWebGame {
         });
         
         // リスタートボタン
-        document.getElementById('restartBtn').addEventListener('click', () => {
-            this.startGame();
-        });
-        
-        // ミュートボタン
-        document.getElementById('muteBtn').addEventListener('click', () => {
-            this.toggleMute();
-        });
+        const restartBtn = document.getElementById('restartBtn');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => {
+                this.startGame();
+            });
+        }
         
         // ゲームボードのタッチドラッグ操作
         this.setupTouchDrag();
@@ -291,7 +289,7 @@ class TetrisWebGame {
         
         this.websocket.onopen = () => {
             this.isConnected = true;
-            this.updateConnectionStatus('接続済み', 'green');
+            console.log('WebSocket接続済み');
         };
         
         this.websocket.onmessage = (event) => {
@@ -305,21 +303,23 @@ class TetrisWebGame {
         
         this.websocket.onclose = () => {
             this.isConnected = false;
-            this.updateConnectionStatus('接続が切れました', 'red');
+            console.log('WebSocket接続が切れました');
             // 再接続を試行
             setTimeout(() => this.connectWebSocket(), 3000);
         };
         
         this.websocket.onerror = (error) => {
             console.error('WebSocketエラー:', error);
-            this.updateConnectionStatus('接続エラー', 'red');
+            console.log('WebSocket接続エラー:', error);
         };
     }
     
     updateConnectionStatus(message, color) {
         const statusElement = document.getElementById('connectionStatus');
-        statusElement.textContent = message;
-        statusElement.style.color = color;
+        if (statusElement) {
+            statusElement.textContent = message;
+            statusElement.style.color = color;
+        }
     }
     
     sendAction(action, x = null, y = null) {
