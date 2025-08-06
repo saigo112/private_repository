@@ -32,6 +32,9 @@ class TetrisWebGame {
         // レンダリング最適化用の変数
         this.lastNextPiece = null;
         
+        // 難易度設定
+        this.selectedDifficulty = 1.0; // デフォルトは普通（1.0倍速）
+        
         // 音声の初期化
         this.sounds = {};
         this.bgm = null;
@@ -39,9 +42,26 @@ class TetrisWebGame {
         
         this.setupEventListeners();
         this.setupOPScreen();
+        
+        // 初期スコア表示（個人ベスト & 世界記録）
+        this.updateScoreDisplays();
     }
     
     setupOPScreen() {
+        // 難易度選択ボタンのイベント
+        const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+        difficultyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 以前の選択を解除
+                difficultyBtns.forEach(b => b.classList.remove('selected'));
+                // 新しい選択を設定
+                btn.classList.add('selected');
+                // 選択された速度を保存
+                this.selectedDifficulty = parseFloat(btn.dataset.speed);
+                console.log('Selected difficulty:', this.selectedDifficulty);
+            });
+        });
+        
         // OP画面の開始ボタンイベント
         const startGameBtn = document.getElementById('startGameBtn');
         if (startGameBtn) {
@@ -152,9 +172,7 @@ class TetrisWebGame {
             { id: 'downBtn', action: 'down' },
             { id: 'upBtn', action: 'rotate' },
             { id: 'bombBtn', action: 'spawn_bomb' },
-            { id: 'pauseBtn', action: 'pause' },
-            { id: 'speedUpBtn', action: 'speed_up' },
-            { id: 'speedDownBtn', action: 'speed_down' }
+            { id: 'pauseBtn', action: 'pause' }
         ];
         
         mobileButtons.forEach(button => {
@@ -170,7 +188,7 @@ class TetrisWebGame {
         const restartBtn = document.getElementById('restartBtn');
         if (restartBtn) {
             restartBtn.addEventListener('click', () => {
-                this.startGame();
+                this.restartGame();
             });
         }
         
@@ -373,21 +391,52 @@ class TetrisWebGame {
             this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
             this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
             
-            const response = await fetch('/start', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                this.updateGameState(data.game_state);
+            // WebSocket経由でゲーム開始と初期速度を送信
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    action: 'start',
+                    initial_speed_multiplier: this.selectedDifficulty
+                }));
+                
                 // BGMを開始
                 this.playBGM();
+            } else {
+                console.error('WebSocket接続が確立されていません');
             }
         } catch (error) {
             console.error('ゲーム開始エラー:', error);
+        }
+    }
+    
+    restartGame() {
+        try {
+            // ゲームオーバー状態をリセット
+            const gameOverElement = document.getElementById('gameOver');
+            if (gameOverElement) {
+                gameOverElement.classList.add('hidden');
+            }
+            
+            // ゲームオーバー効果音フラグをリセット
+            this.gameOverSoundPlayed = false;
+            
+            // ゲームボードをクリア
+            this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            
+            // WebSocket経由でゲーム再開（選択済みの難易度を維持）
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({
+                    action: 'start',
+                    initial_speed_multiplier: this.selectedDifficulty
+                }));
+                
+                // BGMを開始
+                this.playBGM();
+            } else {
+                console.error('WebSocket接続が確立されていません');
+            }
+        } catch (error) {
+            console.error('ゲーム再開エラー:', error);
         }
     }
     
@@ -621,6 +670,9 @@ class TetrisWebGame {
                 this.playSound('gameover');
                 this.gameOverSoundPlayed = true;
                 
+                // スコアを送信
+                this.submitScore();
+                
                 // 3秒後にOP画面に戻る
                 setTimeout(() => {
                     this.returnToOPScreen();
@@ -737,6 +789,110 @@ class TetrisWebGame {
         }
     }
 
+    async submitScore() {
+        if (!this.gameState) return;
+        
+        const currentScore = this.gameState.score;
+        let isNewPersonalBest = false;
+        let isNewWorldRecord = false;
+        
+        // 個人ベストをチェック・更新
+        isNewPersonalBest = this.savePersonalBest(currentScore);
+        if (isNewPersonalBest) {
+            console.log('新しい個人ベスト達成!', currentScore);
+        }
+        
+        // 世界記録をサーバーに送信・チェック
+        try {
+            const response = await fetch('/submit-score', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    score: currentScore,
+                    level: this.gameState.level,
+                    lines_cleared: this.gameState.lines_cleared
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                isNewWorldRecord = result.is_new_high_score;
+                if (isNewWorldRecord) {
+                    console.log('🏆 新しい世界記録達成!', result.current_high_score);
+                }
+            }
+        } catch (error) {
+            console.error('世界記録送信エラー:', error);
+        }
+        
+        // 結果をコンソールに表示
+        if (isNewPersonalBest && isNewWorldRecord) {
+            console.log('🎉 個人ベスト & 世界記録の両方を更新しました!');
+        } else if (isNewPersonalBest) {
+            console.log('🎯 個人ベストを更新しました!');
+        } else if (isNewWorldRecord) {
+            console.log('🏆 世界記録を更新しました!');
+        }
+    }
+    
+    // 個人ベストスコア管理（ローカルストレージ）
+    loadPersonalBest() {
+        try {
+            const personalBest = localStorage.getItem('tetris_personal_best');
+            return personalBest ? parseInt(personalBest) : 0;
+        } catch (error) {
+            console.error('個人ベスト取得エラー:', error);
+            return 0;
+        }
+    }
+    
+    savePersonalBest(score) {
+        try {
+            const currentBest = this.loadPersonalBest();
+            if (score > currentBest) {
+                localStorage.setItem('tetris_personal_best', score.toString());
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('個人ベスト保存エラー:', error);
+            return false;
+        }
+    }
+    
+    // 世界記録管理（サーバー）
+    async loadWorldRecord() {
+        try {
+            const response = await fetch('/high-score');
+            if (response.ok) {
+                const data = await response.json();
+                return data.high_score;
+            }
+        } catch (error) {
+            console.error('世界記録取得エラー:', error);
+        }
+        return 0;
+    }
+    
+    // 両方のスコア表示を更新
+    async updateScoreDisplays() {
+        // 個人ベストを更新
+        const personalBest = this.loadPersonalBest();
+        const personalBestElement = document.getElementById('personalBest');
+        if (personalBestElement) {
+            personalBestElement.textContent = personalBest.toLocaleString();
+        }
+        
+        // 世界記録を更新
+        const worldRecord = await this.loadWorldRecord();
+        const worldRecordElement = document.getElementById('worldRecord');
+        if (worldRecordElement) {
+            worldRecordElement.textContent = worldRecord.toLocaleString();
+        }
+    }
+
     returnToOPScreen() {
         // ゲーム画面を非表示にしてOP画面を表示
         const opScreen = document.getElementById('opScreen');
@@ -751,6 +907,9 @@ class TetrisWebGame {
             this.gameState = null;
             this.isConnected = false;
             this.gameOverSoundPlayed = false;
+            
+            // スコア表示を更新（個人ベスト & 世界記録）
+            this.updateScoreDisplays();
             
             // WebSocket接続を切断
             if (this.websocket) {

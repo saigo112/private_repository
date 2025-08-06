@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>テトリスWebゲーム</title>
-    <link rel="stylesheet" href="style.css?v=2.1">
+    <link rel="stylesheet" href="style.css?v=2.4">
 </head>
 <body>
     <!-- OP画面 -->
@@ -16,6 +16,16 @@
             <div class="op-title">
                 <h1 class="op-main-title">TETRIS</h1>
                 <div class="op-subtitle">Web Edition</div>
+                <div class="score-displays">
+                    <div class="personal-best-display">
+                        <span class="score-label">個人ベスト:</span>
+                        <span id="personalBest" class="score-value personal">0</span>
+                    </div>
+                    <div class="world-record-display">
+                        <span class="score-label">世界記録:</span>
+                        <span id="worldRecord" class="score-value world">0</span>
+                    </div>
+                </div>
             </div>
             
 
@@ -42,6 +52,21 @@
                 </div>
             </div>
             
+            <div class="difficulty-section">
+                <h3>難易度を選択</h3>
+                <div class="difficulty-options">
+                    <button class="difficulty-btn" data-speed="0.5">
+                        😊 かんたん<br><span class="speed-label">0.5倍速</span>
+                    </button>
+                    <button class="difficulty-btn selected" data-speed="1.0">
+                        🙂 ふつう<br><span class="speed-label">1.0倍速</span>
+                    </button>
+                    <button class="difficulty-btn" data-speed="1.5">
+                        😤 むずかしい<br><span class="speed-label">1.5倍速</span>
+                    </button>
+                </div>
+            </div>
+            
             <button id="startGameBtn" class="start-game-btn">
                 <span class="btn-text">ゲーム開始</span>
                 <span class="btn-icon">▶️</span>
@@ -53,7 +78,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.5"></script>
+    <script src="script.js?v=2.8"></script>
 </body>
 </html>
 
@@ -86,10 +111,6 @@
                                     <div class="next-piece-container">
                             <span class="label">次:</span>
                             <canvas id="nextPiece" width="60" height="40"></canvas>
-                        </div>
-                        <div class="speed-controls">
-                            <button id="speedUpBtn" class="speed-btn">+</button>
-                            <button id="speedDownBtn" class="speed-btn">-</button>
                         </div>
         </div>
 

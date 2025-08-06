@@ -7,7 +7,43 @@ from contextlib import asynccontextmanager
 import json
 import time
 import asyncio
+import os
 from game import TetrisGame, ActionType
+
+# ハイスコア管理のためのモデル
+class ScoreSubmission(BaseModel):
+    score: int
+    level: int
+    lines_cleared: int
+
+# ハイスコアファイルのパス
+HIGH_SCORE_FILE = "high_score.json"
+
+def load_high_score():
+    """ハイスコアをファイルから読み込み"""
+    try:
+        if os.path.exists(HIGH_SCORE_FILE):
+            with open(HIGH_SCORE_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('high_score', 0)
+        return 0
+    except Exception as e:
+        print(f"ハイスコア読み込みエラー: {e}")
+        return 0
+
+def save_high_score(score: int):
+    """ハイスコアをファイルに保存"""
+    try:
+        current_high_score = load_high_score()
+        if score > current_high_score:
+            data = {'high_score': score}
+            with open(HIGH_SCORE_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        return False
+    except Exception as e:
+        print(f"ハイスコア保存エラー: {e}")
+        return False
 
 # ゲーム状態の自動更新タスク
 async def game_update_task():
@@ -95,6 +131,23 @@ async def start_game():
     """新しいゲームを開始（WebSocket経由で実行されるため、このエンドポイントは非推奨）"""
     return {"message": "WebSocket接続経由でゲームを開始してください"}
 
+@app.get("/high-score")
+async def get_high_score():
+    """ハイスコアを取得"""
+    high_score = load_high_score()
+    return {"high_score": high_score}
+
+@app.post("/submit-score")
+async def submit_score(score_data: ScoreSubmission):
+    """スコアを送信してハイスコア更新をチェック"""
+    is_new_high_score = save_high_score(score_data.score)
+    current_high_score = load_high_score()
+    return {
+        "submitted_score": score_data.score,
+        "current_high_score": current_high_score,
+        "is_new_high_score": is_new_high_score
+    }
+
 @app.post("/move")
 async def perform_move(action_request: ActionRequest):
     """アクションを実行（WebSocket経由で実行されるため、このエンドポイントは非推奨）"""
@@ -128,7 +181,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 game = get_or_create_game(websocket)
                 
                 if action == "start":
+                    initial_speed_multiplier = message.get("initial_speed_multiplier", 1.0)
                     game.reset_game()
+                    game.speed_multiplier = initial_speed_multiplier
                 elif action in ["left", "right", "down", "rotate", "hard_drop"]:
                     action_type = ActionType(action)
                     game.perform_action(action_type)
