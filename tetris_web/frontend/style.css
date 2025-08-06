@@ -161,32 +161,71 @@ body {
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .op-content {
-        padding: 30px 20px;
-        margin: 20px;
+        padding: 20px 15px;
+        margin: 15px;
     }
     
-    .op-main-title {
-        font-size: 3rem;
-    }
-    
-    .instructions-grid {
-        grid-template-columns: 1fr;
-        max-width: 300px;
-    }
-    
-    .start-game-btn {
-        padding: 15px 30px;
-        font-size: 1.1rem;
-    }
-}
-
-@media (max-width: 480px) {
     .op-main-title {
         font-size: 2.5rem;
     }
     
+    .instructions-grid {
+        grid-template-columns: 1fr;
+        max-width: 250px;
+    }
+    
+    .start-game-btn {
+        padding: 12px 25px;
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .op-content {
+        padding: 15px 10px;
+        margin: 10px;
+    }
+    
+    .op-main-title {
+        font-size: 2rem;
+    }
+    
     .op-subtitle {
+        font-size: 1rem;
+    }
+    
+    .op-instructions h3 {
         font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+    
+    .instructions-grid {
+        max-width: 200px;
+        gap: 8px;
+    }
+    
+    .instruction-item {
+        padding: 6px 10px;
+    }
+    
+    .key {
+        min-width: 40px;
+        padding: 3px 6px;
+        font-size: 0.8rem;
+    }
+    
+    .action {
+        font-size: 0.8rem;
+    }
+    
+    .start-game-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+    
+    .op-footer {
+        margin-top: 15px;
+        font-size: 0.8rem;
     }
 }
 
@@ -425,42 +464,47 @@ body {
 /* スマホ専用レイアウト（縦向き） */
 @media (max-width: 480px) and (orientation: portrait) {
     .game-container {
-        padding: 5px;
-        gap: 5px;
+        padding: 3px;
+        gap: 3px;
         height: 100vh;
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     
     .game-header {
-        padding: 5px 10px;
-        margin-bottom: 5px;
+        padding: 3px 8px;
+        margin-bottom: 3px;
+        flex-shrink: 0;
     }
     
     .game-header h1 {
-        font-size: 1.2rem;
-        margin-bottom: 5px;
+        font-size: 1rem;
+        margin-bottom: 3px;
     }
     
     .game-info {
-        gap: 5px;
+        gap: 3px;
         flex-wrap: wrap;
     }
     
     .info-item {
-        font-size: 0.6rem;
+        font-size: 0.5rem;
     }
     
     .game-main {
         flex: 1;
-        gap: 5px;
+        gap: 3px;
         align-items: center;
+        min-height: 0;
     }
     
     .game-sidebar {
         flex-direction: row;
         align-items: center;
-        gap: 5px;
-        padding: 5px;
+        gap: 3px;
+        padding: 3px;
+        flex-shrink: 0;
     }
     
     .next-piece-container {
@@ -469,13 +513,13 @@ body {
     }
     
     .next-piece-container h3 {
-        font-size: 0.7rem;
-        margin-bottom: 2px;
+        font-size: 0.6rem;
+        margin-bottom: 1px;
     }
     
     #nextPiece {
-        width: 60px;
-        height: 40px;
+        width: 50px;
+        height: 30px;
     }
     
     .controls-info {
@@ -485,66 +529,72 @@ body {
     }
     
     .mobile-controls {
-        flex-direction: row;
-        gap: 3px;
-        padding: 5px;
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-direction: column;
+        gap: 2px;
+        padding: 3px;
+        flex-shrink: 0;
+        height: auto;
     }
     
     .control-row {
-        gap: 3px;
+        gap: 2px;
         justify-content: center;
-        flex-wrap: wrap;
+        display: flex;
+        flex-wrap: nowrap;
     }
     
     .control-btn {
-        padding: 8px 10px;
-        font-size: 0.7rem;
-        min-width: 45px;
-        min-height: 35px;
+        padding: 6px 8px;
+        font-size: 0.6rem;
+        min-width: 40px;
+        min-height: 30px;
         flex: 1;
-        max-width: 60px;
-        border-radius: 25px;
+        max-width: 50px;
+        border-radius: 20px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .rotate-btn {
-        min-width: 50px;
+        min-width: 45px;
     }
     
     .hard-drop-btn,
     .bomb-btn {
-        min-width: 55px;
+        min-width: 45px;
     }
     
     .pause-btn {
-        min-width: 50px;
+        min-width: 40px;
     }
     
     .speed-btn {
-        min-width: 45px;
+        min-width: 40px;
     }
     
     #gameBoard {
         max-width: 100%;
-        max-height: 40vh;
+        max-height: 45vh;
         width: auto;
         height: auto;
         aspect-ratio: 1/2;
+        flex-shrink: 0;
     }
     
     .connection-status {
-        padding: 3px;
-        font-size: 0.6rem;
+        padding: 2px;
+        font-size: 0.5rem;
+        flex-shrink: 0;
     }
     
     .audio-controls {
-        margin-top: 3px;
+        margin-top: 2px;
     }
     
     .audio-controls .btn {
-        padding: 4px 8px;
-        font-size: 0.6rem;
+        padding: 3px 6px;
+        font-size: 0.5rem;
     }
 }
 

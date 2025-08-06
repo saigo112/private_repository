@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>テトリスWebゲーム</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.3">
 </head>
 <body>
     <!-- OP画面 -->
@@ -34,15 +37,7 @@
                     </div>
                     <div class="instruction-item">
                         <span class="key">Space</span>
-                        <span class="action">ハードドロップ</span>
-                    </div>
-                    <div class="instruction-item">
-                        <span class="key">B</span>
-                        <span class="action">爆弾ピース</span>
-                    </div>
-                    <div class="instruction-item">
-                        <span class="key">+/-</span>
-                        <span class="action">速度調整</span>
+                        <span class="action">ドロップ</span>
                     </div>
                 </div>
             </div>
@@ -58,7 +53,7 @@
         </div>
     </div>
 
-    <script src="script.js?v=1.1"></script>
+    <script src="script.js?v=1.3"></script>
 </body>
 </html>
 
@@ -128,25 +123,19 @@
 
         <div class="mobile-controls">
             <div class="control-row">
-                <button id="rotateBtn" class="control-btn rotate-btn">回転</button>
-            </div>
-            <div class="control-row">
                 <button id="leftBtn" class="control-btn">←</button>
-                <button id="downBtn" class="control-btn">↓</button>
+                <button id="rotateBtn" class="control-btn rotate-btn">回転</button>
                 <button id="rightBtn" class="control-btn">→</button>
             </div>
             <div class="control-row">
-                <button id="hardDropBtn" class="control-btn">ハードドロップ</button>
+                <button id="downBtn" class="control-btn">↓</button>
+                <button id="hardDropBtn" class="control-btn">ドロップ</button>
+                <button id="bombBtn" class="control-btn bomb-btn">爆弾</button>
             </div>
             <div class="control-row">
-                <button id="bombBtn" class="control-btn bomb-btn">爆弾ピース</button>
-            </div>
-            <div class="control-row">
-                <button id="pauseBtn" class="control-btn pause-btn">⏸️ ポーズ</button>
-            </div>
-            <div class="control-row">
-                            <button id="speedUpBtn" class="control-btn speed-btn">🚀 速度UP</button>
-            <button id="speedDownBtn" class="control-btn speed-btn">🐌 速度DOWN</button>
+                <button id="pauseBtn" class="control-btn pause-btn">⏸️</button>
+                <button id="speedUpBtn" class="control-btn speed-btn">🚀</button>
+                <button id="speedDownBtn" class="control-btn speed-btn">🐌</button>
             </div>
         </div>
 
