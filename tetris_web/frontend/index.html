@@ -7,7 +7,76 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
+    <!-- OP画面 -->
+    <div id="opScreen" class="op-screen">
+        <div class="op-content">
+            <div class="op-title">
+                <h1 class="op-main-title">TETRIS</h1>
+                <div class="op-subtitle">Web Edition</div>
+            </div>
+            
+            <div class="op-features">
+                <div class="feature-item">
+                    <span class="feature-icon">💥</span>
+                    <span class="feature-text">爆弾システム</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⚡</span>
+                    <span class="feature-text">速度調整</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <span class="feature-text">スマホ対応</span>
+                </div>
+            </div>
+            
+            <div class="op-instructions">
+                <h3>操作方法</h3>
+                <div class="instructions-grid">
+                    <div class="instruction-item">
+                        <span class="key">←→</span>
+                        <span class="action">移動</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="key">↑</span>
+                        <span class="action">回転</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="key">↓</span>
+                        <span class="action">落下</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="key">Space</span>
+                        <span class="action">ハードドロップ</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="key">B</span>
+                        <span class="action">爆弾ピース</span>
+                    </div>
+                    <div class="instruction-item">
+                        <span class="key">+/-</span>
+                        <span class="action">速度調整</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="startGameBtn" class="start-game-btn">
+                <span class="btn-text">ゲーム開始</span>
+                <span class="btn-icon">▶️</span>
+            </button>
+            
+            <div class="op-footer">
+                <p>クリックしてゲームを開始</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+    <!-- ゲーム画面 -->
+    <div id="gameScreen" class="game-container hidden">
         <div class="game-header">
             <h1>テトリス</h1>
             <div class="game-info">
@@ -92,8 +161,4 @@
                 <button id="muteBtn" class="btn">🔊 ミュート</button>
             </div>
         </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html> 
+    </div> 

@@ -12,6 +12,7 @@ class TetrisWebGame {
         this.gameState = null;
         this.websocket = null;
         this.isConnected = false;
+        this.gameStarted = false;
         
         // 音声の初期化
         this.sounds = {};
@@ -19,38 +20,48 @@ class TetrisWebGame {
         this.loadSounds();
         
         this.setupEventListeners();
-        this.connectWebSocket();
-        // WebSocket接続後にゲームを開始
-        setTimeout(() => {
-            this.startGame();
-        }, 1000);
+        this.setupOPScreen();
+    }
+    
+    setupOPScreen() {
+        // OP画面の開始ボタンイベント
+        const startGameBtn = document.getElementById('startGameBtn');
+        if (startGameBtn) {
+            startGameBtn.addEventListener('click', () => {
+                this.startGameFromOP();
+            });
+        }
+    }
+
+    startGameFromOP() {
+        // OP画面を非表示にしてゲーム画面を表示
+        const opScreen = document.getElementById('opScreen');
+        const gameScreen = document.getElementById('gameScreen');
         
-        // ページ読み込み完了後にBGMを試行
-        window.addEventListener('load', () => {
+        if (opScreen && gameScreen) {
+            opScreen.style.display = 'none';
+            gameScreen.classList.remove('hidden');
+            
+            // ゲームを開始
+            this.gameStarted = true;
+            this.connectWebSocket();
+            
+            // WebSocket接続後にゲームを開始
+            setTimeout(() => {
+                this.startGame();
+            }, 1000);
+            
+            // BGMを開始
             setTimeout(() => {
                 this.playBGM();
             }, 2000);
-        });
-        
-        // ユーザーインタラクションでBGM開始
-        document.addEventListener('click', () => {
-            if (this.bgm && this.bgm.paused) {
-                this.playBGM();
-            }
-        }, { once: true });
-        
-        // キーボードイベントでもBGM開始を試行
-        document.addEventListener('keydown', () => {
-            if (this.bgm && this.bgm.paused) {
-                this.playBGM();
-            }
-        }, { once: true });
+        }
     }
-    
+
     setupEventListeners() {
         // キーボードイベント
         document.addEventListener('keydown', (e) => {
-            if (!this.isConnected) return;
+            if (!this.isConnected || !this.gameStarted) return;
             
             switch(e.key) {
                 case 'ArrowLeft':
@@ -558,6 +569,11 @@ class TetrisWebGame {
             // ゲームオーバー時にBGMを停止し、効果音を再生
             this.stopBGM();
             this.playSound('gameover');
+            
+            // 3秒後にOP画面に戻る
+            setTimeout(() => {
+                this.returnToOPScreen();
+            }, 3000);
         } else {
             gameOverElement.classList.add('hidden');
         }
@@ -568,6 +584,31 @@ class TetrisWebGame {
             pauseBtn.textContent = '▶️ 再開';
         } else {
             pauseBtn.textContent = '⏸️ ポーズ';
+        }
+    }
+
+    returnToOPScreen() {
+        // ゲーム画面を非表示にしてOP画面を表示
+        const opScreen = document.getElementById('opScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        
+        if (opScreen && gameScreen) {
+            opScreen.style.display = 'flex';
+            gameScreen.classList.add('hidden');
+            
+            // ゲーム状態をリセット
+            this.gameStarted = false;
+            this.gameState = null;
+            this.isConnected = false;
+            
+            // WebSocket接続を切断
+            if (this.websocket) {
+                this.websocket.close();
+                this.websocket = null;
+            }
+            
+            // BGMを停止
+            this.stopBGM();
         }
     }
     

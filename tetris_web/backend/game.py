@@ -128,8 +128,8 @@ class TetrisGame:
         self.bombs_available = 0
         
         self.fall_time = 0
-        self.fall_speed = 375  # ミリ秒
-        self.base_fall_speed = 375
+        self.fall_speed = 300  # ミリ秒
+        self.base_fall_speed = 300
         self.speed_multiplier = 1.0
         self.paused = False
         self.lines_cleared_this_frame = 0  # ライン消去エフェクト用
