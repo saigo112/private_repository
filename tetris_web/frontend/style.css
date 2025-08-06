@@ -1024,9 +1024,12 @@ body {
         gap: 8px;
         width: 100%;
         max-width: 400px;
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 15px);
+        padding: 15px 0 calc(env(safe-area-inset-bottom, 0px) + 20px) 0; /* 上下左右の余白を追加 */
         margin-bottom: 10px;
         margin-top: 8px;
+        background: rgba(0, 0, 0, 0.1); /* 背景を追加してボックスを視覚化 */
+        border-radius: 15px; /* 角丸を追加 */
+        border: 1px solid rgba(255, 255, 255, 0.1); /* 境界線を追加 */
     }
     
     .control-row {
@@ -1047,13 +1050,14 @@ body {
     }
     
     .control-btn {
-        padding: 12px 16px;
+        padding: 12px 16px 16px 16px; /* 下部の余白を16pxに増加 */
         font-size: 0.9rem;
         min-width: 70px;
         min-height: 45px;
         flex: 1;
         max-width: 115px;
         border-radius: 12px;
+        margin-bottom: 5px; /* ボタン下部に余白を追加 */
     }
     
     .rotate-btn {
@@ -1113,8 +1117,11 @@ body {
     .mobile-controls {
         gap: 6px;
         margin-top: 5px;
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        padding: 12px 0 calc(env(safe-area-inset-bottom, 0px) + 18px) 0; /* 上下左右の余白を追加 */
         margin-bottom: 8px;
+        background: rgba(0, 0, 0, 0.1); /* 背景を追加してボックスを視覚化 */
+        border-radius: 12px; /* 角丸を追加 */
+        border: 1px solid rgba(255, 255, 255, 0.1); /* 境界線を追加 */
     }
     
     .control-row {
@@ -1122,10 +1129,11 @@ body {
     }
     
     .control-btn {
-        padding: 8px 10px;
+        padding: 8px 10px 12px 10px; /* 下部の余白を12pxに増加 */
         font-size: 0.8rem;
         min-width: 50px;
         min-height: 35px;
+        margin-bottom: 3px; /* ボタン下部に余白を追加 */
     }
     
     .rotate-btn {
