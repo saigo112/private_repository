@@ -7,6 +7,17 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>テトリスWebゲーム</title>
+    
+    <!-- PWA対応 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Tetris">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    
     <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body>
@@ -79,6 +90,48 @@
     </div>
 
     <script src="script.js?v=3.2"></script>
+
+    <!-- PWA: サービスワーカー登録 -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function(registration) {
+                        console.log('Service Worker登録成功:', registration.scope);
+                        
+                        // アップデートをチェック
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('新しいService Workerが利用可能です');
+                                    // 必要に応じてユーザーに更新を通知
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.log('Service Worker登録失敗:', error);
+                    });
+            });
+        }
+
+        // PWAインストールプロンプト（オプション）
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            console.log('PWAインストールプロンプトが利用可能です');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // 必要に応じてカスタムインストールボタンを表示
+            // showInstallButton();
+        });
+
+        window.addEventListener('appinstalled', function(e) {
+            console.log('PWAがインストールされました');
+            deferredPrompt = null;
+        });
+    </script>
 </body>
 </html>
 
