@@ -257,6 +257,7 @@ body {
     .game-container {
         height: 100dvh;
         overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 }
 
@@ -300,6 +301,10 @@ body {
     .next-piece-container {
         display: none; /* PC版ではサイドバーに表示 */
     }
+    
+    .speed-controls {
+        display: none; /* PC版では速度調整ボタンを非表示 */
+    }
 }
 
 /* スマホ版のヘッダー */
@@ -313,11 +318,16 @@ body {
         margin-bottom: 2px;
         flex-shrink: 0;
         gap: 5px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
     }
     
     .game-info {
         gap: 2px;
         flex-wrap: wrap;
+        flex: 1;
     }
     
     .info-item {
@@ -336,18 +346,53 @@ body {
         gap: 5px;
         align-items: center;
         flex-direction: row;
+        flex-shrink: 0;
     }
     
     .next-piece-container .label {
-        font-size: 0.5rem;
+        font-size: 0.6rem;
         white-space: nowrap;
-        margin-right: 2px;
+        margin-right: 3px;
     }
     
     #nextPiece {
-        width: 30px;
-        height: 18px;
+        width: 50px;
+        height: 30px;
         flex-shrink: 0;
+    }
+    
+    .speed-controls {
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .speed-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        cursor: pointer;
+        min-width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .speed-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .speed-btn:active {
+        background: rgba(255, 255, 255, 0.4);
+        transform: scale(0.95);
     }
 }
 
