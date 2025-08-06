@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>テトリスWebゲーム</title>
-    <link rel="stylesheet" href="style.css?v=1.7">
+    <link rel="stylesheet" href="style.css?v=1.8">
 </head>
 <body>
     <!-- OP画面 -->
@@ -53,13 +53,14 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.0"></script>
+    <script src="script.js?v=2.2"></script>
 </body>
 </html>
 
     <!-- ゲーム画面 -->
     <div id="gameScreen" class="game-container hidden">
         <div class="game-header">
+            <h1 class="game-title">テトリス</h1>
             <div class="game-info">
                 <div class="info-item">
                     <span class="label">スコア:</span>
@@ -96,12 +97,38 @@
                     <button id="restartBtn" class="btn">リスタート</button>
                 </div>
             </div>
+
+            <div class="game-sidebar">
+                <div class="next-piece-container">
+                    <h3>次のピース</h3>
+                    <canvas id="nextPiece" width="120" height="80"></canvas>
+                </div>
+                
+                <div class="controls-info">
+                    <h3>操作方法</h3>
+                    <div class="pc-controls">
+                        <p>←→: 移動</p>
+                        <p>↑: 回転</p>
+                        <p>↓: 落下</p>
+                        <p>Space: ハードドロップ</p>
+                        <p>B: 爆弾ピース生成</p>
+                        <p>P: ポーズ</p>
+                        <p>+/-: 速度調整</p>
+                    </div>
+                    <div class="mobile-controls-info">
+                        <p>📱 スマホ操作:</p>
+                        <p>ドラッグ: 移動・回転</p>
+                        <p>ボタン: 各種操作</p>
+                        <p>タップ: 爆弾配置</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="mobile-controls">
             <div class="control-row">
                 <button id="leftBtn" class="control-btn">←</button>
-                <button id="upBtn" class="control-btn">回転</button>
+                <button id="upBtn" class="control-btn">◻</button>
                 <button id="rightBtn" class="control-btn">→</button>
             </div>
             <div class="control-row">

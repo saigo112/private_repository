@@ -35,7 +35,7 @@ async def game_update_task():
         except Exception as e:
             print(f"ゲーム更新タスクエラー: {e}")
         
-        await asyncio.sleep(0.016)  # 約60FPS（16ms間隔）で更新
+        await asyncio.sleep(0.008)  # 約120FPS（8ms間隔）で更新
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

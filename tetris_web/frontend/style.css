@@ -8,9 +8,7 @@ body {
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    min-height: 100dvh;
     height: 100vh;
-    height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,11 +16,19 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+}
+
+/* スマホ版のみ固定位置 */
+@media (max-width: 768px) {
+    body {
+        min-height: 100dvh;
+        height: 100dvh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
 }
 
 /* OP画面のスタイル */
@@ -240,12 +246,18 @@ body {
     max-width: 1200px;
     width: 100%;
     height: 100vh;
-    height: 100dvh;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
     overflow: hidden;
+}
+
+/* スマホ版のみ動的ビューポート */
+@media (max-width: 768px) {
+    .game-container {
+        height: 100dvh;
+    }
 }
 
 .game-header {
@@ -260,6 +272,34 @@ body {
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
+}
+
+.game-title {
+    font-size: 2.5rem;
+    margin: 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* PC版のヘッダー */
+@media (min-width: 769px) {
+    .game-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .game-title {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+    
+    .game-info {
+        justify-content: center;
+        gap: 30px;
+    }
+    
+    .next-piece-container {
+        display: none; /* PC版ではサイドバーに表示 */
+    }
 }
 
 .game-info {
@@ -311,6 +351,26 @@ body {
     min-height: 0;
 }
 
+/* PC版のレイアウト */
+@media (min-width: 769px) {
+    .game-main {
+        flex-direction: row;
+        gap: 30px;
+        align-items: flex-start;
+    }
+    
+    .game-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 200px;
+    }
+    
+    .mobile-controls {
+        display: none;
+    }
+}
+
 .game-board-container {
     position: relative;
     background: rgba(0, 0, 0, 0.3);
@@ -331,6 +391,14 @@ body {
     max-height: 100%;
     width: auto;
     height: auto;
+}
+
+/* PC版のゲームボードサイズ */
+@media (min-width: 769px) {
+    #gameBoard {
+        width: 300px;
+        height: 600px;
+    }
 }
 
 .game-over {
@@ -369,7 +437,7 @@ body {
 }
 
 .game-sidebar {
-    display: flex;
+    display: none; /* デフォルトでは非表示（スマホ版） */
     flex-direction: column;
     gap: 20px;
     min-width: 200px;
@@ -412,6 +480,20 @@ body {
     margin-bottom: 8px;
     font-size: 0.9rem;
     opacity: 0.9;
+}
+
+/* PC版のコントロール情報 */
+@media (min-width: 769px) {
+    .mobile-controls-info {
+        display: none;
+    }
+}
+
+/* スマホ版のコントロール情報 */
+@media (max-width: 768px) {
+    .pc-controls {
+        display: none;
+    }
 }
 
 .mobile-controls {

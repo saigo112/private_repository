@@ -16,7 +16,7 @@ class TetrisWebGame {
         
         // 連打対策用の変数
         this.lastActionTime = {};
-        this.actionCooldown = 50; // ミリ秒（100ms → 50msに短縮）
+        this.actionCooldown = 25; // ミリ秒（50ms → 25msに短縮）
         
         // ゲームオーバー効果音の再生制御
         this.gameOverSoundPlayed = false;
@@ -25,9 +25,9 @@ class TetrisWebGame {
         this.isDragging = false;
         this.dragStartX = 0;
         this.dragStartY = 0;
-        this.dragThreshold = 10; // ドラッグ判定の閾値（ピクセル）
+        this.dragThreshold = 5; // ドラッグ判定の閾値（ピクセル）
         this.lastDragTime = 0;
-        this.dragCooldown = 100; // ドラッグ操作のクールダウン（ミリ秒）
+        this.dragCooldown = 50; // ドラッグ操作のクールダウン（ミリ秒）
         
         // レンダリング最適化用の変数
         this.lastNextPiece = null;
@@ -669,7 +669,10 @@ class TetrisWebGame {
                 if (now - this.lastDragTime > this.dragCooldown) {
                     this.handleDragGesture(deltaX, deltaY);
                     this.lastDragTime = now;
+                    // ドラッグ状態をリセットして次の操作を可能にする
                     this.isDragging = false;
+                    this.dragStartX = touch.clientX;
+                    this.dragStartY = touch.clientY;
                 }
             }
         }, { passive: false });
@@ -688,6 +691,14 @@ class TetrisWebGame {
                 this.sendAction('rotate');
             }
             
+            this.isDragging = false;
+        }, { passive: false });
+        
+        // タッチキャンセル時も処理
+        board.addEventListener('touchcancel', (e) => {
+            if (!this.isConnected || !this.gameStarted) return;
+            
+            e.preventDefault();
             this.isDragging = false;
         }, { passive: false });
         
