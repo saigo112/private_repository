@@ -419,9 +419,18 @@ class TetrisWebGame {
             // ゲームオーバー効果音フラグをリセット
             this.gameOverSoundPlayed = false;
             
-            // ゲームボードをクリア
+            // ゲームボードを完全にクリア
             this.ctx.clearRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.gameBoard.width, this.gameBoard.height);
+            
             this.nextCtx.clearRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            this.nextCtx.fillStyle = '#222';
+            this.nextCtx.fillRect(0, 0, this.nextPieceCanvas.width, this.nextPieceCanvas.height);
+            
+            // ゲーム状態をリセット
+            this.gameState = null;
+            this.lastNextPiece = null;
             
             // WebSocket経由でゲーム再開（選択済みの難易度を維持）
             if (this.ws && this.ws.readyState === WebSocket.OPEN) {
@@ -912,9 +921,9 @@ class TetrisWebGame {
             this.updateScoreDisplays();
             
             // WebSocket接続を切断
-            if (this.websocket) {
-                this.websocket.close();
-                this.websocket = null;
+            if (this.ws) {
+                this.ws.close();
+                this.ws = null;
             }
             
             // BGMを停止

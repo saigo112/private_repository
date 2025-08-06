@@ -44,6 +44,7 @@ body {
     align-items: center;
     z-index: 1000;
     animation: fadeIn 0.5s ease-in;
+    overflow-y: auto; /* スクロール可能に */
 }
 
 .op-content {
@@ -279,9 +280,16 @@ body {
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
+    .op-screen {
+        align-items: flex-start; /* 上からのレイアウトに変更 */
+        padding: 20px 0; /* 上下にパディング追加 */
+    }
+    
     .op-content {
         padding: 20px 15px;
         margin: 15px;
+        width: 100%;
+        max-width: 100%;
     }
     
     .op-main-title {
@@ -296,6 +304,12 @@ body {
     .start-game-btn {
         padding: 12px 25px;
         font-size: 1rem;
+        margin: 20px auto; /* 上下にマージン追加 */
+    }
+    
+    /* スマホ版ではドロップ操作を非表示 */
+    .instruction-item:nth-child(4) {
+        display: none;
     }
 }
 

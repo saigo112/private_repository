@@ -8,6 +8,7 @@ import json
 import time
 import asyncio
 import os
+from google.cloud import firestore
 from game import TetrisGame, ActionType
 
 # ハイスコア管理のためのモデル
@@ -16,33 +17,61 @@ class ScoreSubmission(BaseModel):
     level: int
     lines_cleared: int
 
-# ハイスコアファイルのパス
-HIGH_SCORE_FILE = "high_score.json"
+# Firestoreクライアントの初期化
+try:
+    db = firestore.Client()
+    print("Firestoreクライアントが正常に初期化されました")
+except Exception as e:
+    print(f"Firestore初期化エラー: {e}")
+    db = None
+
+# Firestoreのコレクション名とドキュメント名
+COLLECTION_NAME = "tetris_game"
+HIGH_SCORE_DOC = "high_score"
 
 def load_high_score():
-    """ハイスコアをファイルから読み込み"""
+    """Firestoreからハイスコアを読み込み"""
     try:
-        if os.path.exists(HIGH_SCORE_FILE):
-            with open(HIGH_SCORE_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return data.get('high_score', 0)
-        return 0
+        if db is None:
+            print("Firestoreクライアントが利用できません")
+            return 0
+            
+        doc_ref = db.collection(COLLECTION_NAME).document(HIGH_SCORE_DOC)
+        doc = doc_ref.get()
+        
+        if doc.exists:
+            data = doc.to_dict()
+            high_score = data.get('score', 0)
+            print(f"Firestoreからハイスコアを読み込み: {high_score}")
+            return high_score
+        else:
+            print("ハイスコアドキュメントが存在しません。0を返します。")
+            return 0
     except Exception as e:
-        print(f"ハイスコア読み込みエラー: {e}")
+        print(f"Firestoreハイスコア読み込みエラー: {e}")
         return 0
 
 def save_high_score(score: int):
-    """ハイスコアをファイルに保存"""
+    """Firestoreにハイスコアを保存"""
     try:
+        if db is None:
+            print("Firestoreクライアントが利用できません")
+            return False
+            
         current_high_score = load_high_score()
         if score > current_high_score:
-            data = {'high_score': score}
-            with open(HIGH_SCORE_FILE, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            doc_ref = db.collection(COLLECTION_NAME).document(HIGH_SCORE_DOC)
+            doc_ref.set({
+                'score': score,
+                'updated_at': firestore.SERVER_TIMESTAMP
+            })
+            print(f"新しいハイスコアをFirestoreに保存: {score}")
             return True
-        return False
+        else:
+            print(f"現在のスコア {score} は既存のハイスコア {current_high_score} を上回りませんでした")
+            return False
     except Exception as e:
-        print(f"ハイスコア保存エラー: {e}")
+        print(f"Firestoreハイスコア保存エラー: {e}")
         return False
 
 # ゲーム状態の自動更新タスク
