@@ -981,8 +981,8 @@ body {
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
     .game-container {
-        padding: 10px;
-        gap: 15px;
+        padding: 5px;
+        gap: 5px;
         height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
         max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     }
@@ -992,27 +992,29 @@ body {
     }
     
     .game-info {
-        gap: 15px;
+        gap: 8px;
         flex-wrap: wrap;
         justify-content: center;
+        padding: 8px 0;
     }
     
     .game-main {
         flex-direction: column;
         align-items: center;
-        gap: 10px;
+        gap: 5px;
         flex: 1;
-        justify-content: space-between;
+        justify-content: flex-start;
         min-height: 0;
     }
     
     .game-sidebar {
         flex-direction: row;
         justify-content: center;
-        gap: 15px;
+        gap: 10px;
         min-width: auto;
         width: 100%;
         flex-shrink: 0;
+        margin: 5px 0;
     }
     
     .next-piece-container,
@@ -1024,11 +1026,12 @@ body {
     .mobile-controls {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
         width: 100%;
         max-width: 400px;
-        padding-bottom: env(safe-area-inset-bottom, 10px);
-        margin-bottom: 10px;
+        padding-bottom: env(safe-area-inset-bottom, 5px);
+        margin-bottom: 5px;
+        margin-top: 5px;
     }
     
     .control-row {
@@ -1040,20 +1043,21 @@ body {
     
     #gameBoard {
         width: 100%;
-        max-width: 280px;
+        max-width: 260px;
         height: auto;
-        max-height: 50vh;
+        max-height: 45vh;
         object-fit: contain;
         flex-shrink: 0;
+        margin: 0;
     }
     
     .control-btn {
-        padding: 12px 16px;
-        font-size: 1rem;
-        min-width: 70px;
-        min-height: 45px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+        min-width: 65px;
+        min-height: 42px;
         flex: 1;
-        max-width: 120px;
+        max-width: 110px;
     }
     
     .rotate-btn {
@@ -1067,22 +1071,33 @@ body {
 }
 
 @media (max-width: 480px) {
+    .game-container {
+        padding: 3px;
+        gap: 3px;
+    }
+    
     .game-header h1 {
         font-size: 1.2rem;
     }
     
     .game-info {
-        gap: 8px;
+        gap: 5px;
+        padding: 5px 0;
     }
     
     .info-item {
         font-size: 0.7rem;
     }
     
+    .game-main {
+        gap: 3px;
+    }
+    
     .game-sidebar {
         flex-direction: row;
         align-items: center;
         gap: 5px;
+        margin: 3px 0;
     }
     
     .next-piece-container {
@@ -1092,6 +1107,16 @@ body {
     .controls-info {
         max-width: 55%;
         display: none;
+    }
+    
+    #gameBoard {
+        max-width: 240px;
+        max-height: 40vh;
+    }
+    
+    .mobile-controls {
+        gap: 6px;
+        margin-top: 3px;
     }
     
     .control-row {
