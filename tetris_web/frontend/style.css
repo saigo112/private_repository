@@ -16,6 +16,16 @@ body {
     padding: 0;
 }
 
+/* PWA safe-area対応 */
+@supports (padding-top: env(safe-area-inset-top)) {
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+}
+
 /* スマホ版のみ固定位置 */
 @media (max-width: 768px) {
     body {
@@ -973,6 +983,8 @@ body {
     .game-container {
         padding: 10px;
         gap: 15px;
+        height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
     }
     
     .game-header h1 {
@@ -988,7 +1000,10 @@ body {
     .game-main {
         flex-direction: column;
         align-items: center;
-        gap: 20px;
+        gap: 10px;
+        flex: 1;
+        justify-content: space-between;
+        min-height: 0;
     }
     
     .game-sidebar {
@@ -997,6 +1012,7 @@ body {
         gap: 15px;
         min-width: auto;
         width: 100%;
+        flex-shrink: 0;
     }
     
     .next-piece-container,
@@ -1011,6 +1027,8 @@ body {
         gap: 10px;
         width: 100%;
         max-width: 400px;
+        padding-bottom: env(safe-area-inset-bottom, 10px);
+        margin-bottom: 10px;
     }
     
     .control-row {
@@ -1022,8 +1040,11 @@ body {
     
     #gameBoard {
         width: 100%;
-        max-width: 300px;
+        max-width: 280px;
         height: auto;
+        max-height: 50vh;
+        object-fit: contain;
+        flex-shrink: 0;
     }
     
     .control-btn {

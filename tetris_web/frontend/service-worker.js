@@ -1,99 +1,120 @@
-const CACHE_NAME = 'tetris-web-v1';
-const urlsToCache = [
+const CACHE_NAME = 'tetris-web-v2';
+const STATIC_CACHE = 'tetris-static-v2';
+
+// 即座にキャッシュすべき重要なリソース
+const CORE_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
+  '/manifest.json'
+];
+
+// 遅延キャッシュ（後でキャッシュ）
+const SECONDARY_ASSETS = [
   '/script.js',
-  '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
 ];
 
-// サービスワーカーのインストール
+// サービスワーカーのインストール（高速化）
 self.addEventListener('install', function(event) {
-  console.log('Service Worker: インストール中...');
+  console.log('Service Worker: 高速インストール中...');
   
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        console.log('Service Worker: キャッシュを開きました');
-        // 基本的なリソースをプリキャッシュ（オプション）
-        return cache.addAll(urlsToCache.slice(0, 4)); // HTMLとCSS、JSのみ
+    Promise.all([
+      // 重要なリソースのみ即座にキャッシュ
+      caches.open(STATIC_CACHE).then(cache => {
+        return cache.addAll(CORE_ASSETS);
+      }),
+      // バックグラウンドでセカンダリリソースをキャッシュ
+      caches.open(CACHE_NAME).then(cache => {
+        return Promise.allSettled(
+          SECONDARY_ASSETS.map(url => 
+            fetch(url).then(response => response.ok ? cache.put(url, response) : null)
+          )
+        );
       })
-      .catch(function(error) {
-        console.log('Service Worker: キャッシュエラー', error);
-      })
+    ]).catch(error => {
+      console.log('Service Worker: 軽量キャッシュ完了', error);
+    })
   );
   
   // 新しいサービスワーカーを即座にアクティブ化
   self.skipWaiting();
 });
 
-// サービスワーカーのアクティベーション
+// サービスワーカーのアクティベーション（高速化）
 self.addEventListener('activate', function(event) {
-  console.log('Service Worker: アクティベーション中...');
+  console.log('Service Worker: 高速アクティベーション中...');
   
   event.waitUntil(
-    caches.keys().then(function(cacheNames) {
-      return Promise.all(
-        cacheNames.map(function(cacheName) {
-          // 古いキャッシュを削除
-          if (cacheName !== CACHE_NAME) {
-            console.log('Service Worker: 古いキャッシュを削除', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // 古いキャッシュを非同期で削除
+      caches.keys().then(cacheNames => {
+        const validCaches = [CACHE_NAME, STATIC_CACHE];
+        return Promise.all(
+          cacheNames
+            .filter(cacheName => !validCaches.includes(cacheName))
+            .map(cacheName => {
+              console.log('Service Worker: 古いキャッシュを削除', cacheName);
+              return caches.delete(cacheName);
+            })
+        );
+      }),
+      // 即座にクライアントを制御
+      self.clients.claim()
+    ])
   );
-  
-  // 新しいサービスワーカーがすべてのクライアントを制御
-  self.clients.claim();
 });
 
-// フェッチイベントの処理
+// フェッチイベントの処理（高速化）
 self.addEventListener('fetch', function(event) {
+  const url = new URL(event.request.url);
+  
   // WebSocketリクエストは無視
-  if (event.request.url.includes('/ws')) {
+  if (url.pathname.includes('/ws')) {
     return;
   }
   
-  // APIリクエストは常にネットワークから取得
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('/high-score') || 
-      event.request.url.includes('/submit-score')) {
+  // APIリクエストは常にネットワークから取得（高速化）
+  if (url.pathname.includes('/api/') || 
+      url.pathname.includes('/high-score') || 
+      url.pathname.includes('/submit-score')) {
     event.respondWith(fetch(event.request));
     return;
   }
   
-  // その他のリクエストはネットワーク優先、フォールバックでキャッシュ
-  event.respondWith(
-    fetch(event.request)
-      .then(function(response) {
-        // レスポンスが有効な場合、キャッシュに保存
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(function(cache) {
+  // 静的リソースはキャッシュ優先（高速表示）
+  if (CORE_ASSETS.includes(url.pathname) || SECONDARY_ASSETS.includes(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(cachedResponse => {
+        if (cachedResponse) {
+          // キャッシュがあれば即座に返す
+          return cachedResponse;
+        }
+        
+        // キャッシュにない場合のみネットワークから取得
+        return fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(STATIC_CACHE).then(cache => {
               cache.put(event.request, responseToCache);
             });
-        }
-        return response;
+          }
+          return response;
+        });
       })
-      .catch(function() {
-        // ネットワークエラーの場合、キャッシュから取得
-        return caches.match(event.request)
-          .then(function(response) {
-            if (response) {
-              console.log('Service Worker: キャッシュから取得', event.request.url);
-              return response;
-            }
-            // キャッシュにもない場合のフォールバック
-            if (event.request.destination === 'document') {
-              return caches.match('/index.html');
-            }
-          });
-      })
+    );
+    return;
+  }
+  
+  // その他はネットワーク優先
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request).then(response => {
+        return response || caches.match('/index.html');
+      });
+    })
   );
 });
 
